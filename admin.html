@@ -890,9 +890,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // Supabase configuration
-const SUPABASE_URL = "https://vbxvxqxzdhloklxrcgvb.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZieHZ4cXh6ZGhsb2tseHJjZ3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MTI4NDcsImV4cCI6MjA5MDI4ODg0N30.arjQZaDWHBt3E8IffvaRE07pWbCC6-RSvLHK2uLmHsU";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient_URL = "https://vbxvxqxzdhloklxrcgvb.supabase.co";
+  const supabaseClient_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZieHZ4cXh6ZGhsb2tseHJjZ3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MTI4NDcsImV4cCI6MjA5MDI4ODg0N30.arjQZaDWHBt3E8IffvaRE07pWbCC6-RSvLHK2uLmHsU";
+  const supabaseClient = window.supabase.createClient(
+    supabaseClient_URL,
+    supabaseClient_ANON_KEY
+  );
 
 // DOM Elements
 const complaintsBody = document.getElementById('complaintsBody');
@@ -994,7 +997,7 @@ async function fetchComplaints() {
       </tr>
     `;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('complaints')
       .select('*')
       .order('created_at', { ascending: false });
@@ -1347,7 +1350,7 @@ resetFiltersBtn.addEventListener('click', () => {
 
 // ----------------- Real-time Updates -----------------
 // Subscribe to real-time changes in the complaints table
-supabase
+supabaseClient
   .channel('complaints-changes')
   .on('postgres_changes', 
     { 
