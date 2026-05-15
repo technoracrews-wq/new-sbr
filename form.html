@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Smart Complaint Hub · Geo‑Tagged Photo & Video</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ===== EXACT COLOR PALETTE FROM REFERENCE ===== */
+    :root {
+      --primary: #4361ee;
+      --primary-dark: #3a56d4;
+      --secondary: #7209b7;
+      --success: #4cc9f0;
+      --danger: #2ed573;
+      --warning: #f8961e;
+      --light: #f8f9fa;
+      --dark: #212529;
+      --gray: #6c757d;
+      --gray-light: #e9ecef;
+      --border-radius: 16px;
+      --shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      --shadow-hover: 0 15px 35px rgba(0, 0, 0, 0.2);
+      --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      --gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      color: var(--dark);
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    /* Animations */
+    @keyframes float { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-10px); } }
+    @keyframes pulse { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.05); } }
+    @keyframes bounce { 0%,20%,53%,80%,100%{ transform:translate3d(0,0,0); } 40%,43%{ transform:translate3d(0,-20px,0); } 70%{ transform:translate3d(0,-10px,0); } 90%{ transform:translate3d(0,-4px,0); } }
+    @keyframes slideInLeft { from{ transform:translateX(-50px); opacity:0; } to{ transform:translateX(0); opacity:1; } }
+    @keyframes slideInRight { from{ transform:translateX(50px); opacity:0; } to{ transform:translateX(0); opacity:1; } }
+    @keyframes slideInUp { from{ transform:translateY(50px); opacity:0; } to{ transform:translateY(0); opacity:1; } }
+    @keyframes fadeIn { from{ opacity:0; } to{ opacity:1; } }
+    @keyframes shake { 0%,100%{ transform:translateX(0); } 10%,30%,50%,70%,90%{ transform:translateX(-5px); } 20%,40%,60%,80%{ transform:translateX(5px); } }
+    @keyframes spin { to{ transform:rotate(360deg); } }
+
+    .container { max-width: 800px; margin: 0 auto; animation: fadeIn 1s ease-out; }
+
+    .hero {
+      background: var(--gradient); color: white; padding: 40px 20px; border-radius: var(--border-radius);
+      text-align: center; margin-bottom: 40px; box-shadow: var(--shadow); position: relative;
+      overflow: hidden; animation: slideInUp 0.8s ease-out;
+    }
+    .hero h1 { font-size: 2.5rem; margin-bottom: 15px; animation: bounce 1s ease-out; }
+    .hero h1 i { animation: float 3s ease-in-out infinite; }
+    .hero p { font-size: 1.2rem; opacity: 0.9; animation: fadeIn 1s ease-out 0.5s both; }
+
+    /* Progress Bar */
+    .progress-container { margin-bottom: 40px; animation: slideInUp 0.8s ease-out 0.2s both; }
+    .progress-bar {
+      display: flex; justify-content: space-between; position: relative; margin-bottom: 40px;
+    }
+    .progress-bar::before {
+      content: ''; position: absolute; top: 50%; left: 0; transform: translateY(-50%);
+      height: 6px; width: 100%; background-color: var(--gray-light); z-index: 1; border-radius: 3px;
+    }
+    .progress {
+      position: absolute; top: 50%; left: 0; transform: translateY(-50%); height: 6px;
+      background: var(--gradient); z-index: 2; transition: var(--transition); border-radius: 3px;
+    }
+    .step {
+      width: 50px; height: 50px; background: white; border: 4px solid var(--gray-light);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-weight: bold; color: var(--gray); z-index: 3; position: relative;
+      transition: var(--transition); animation: pulse 2s infinite;
+    }
+    .step.active { border-color: var(--primary); color: var(--primary); animation: bounce 0.6s ease-out; }
+    .step.completed { background: var(--gradient); border-color: var(--primary); color: white; }
+    .step-label {
+      position: absolute; top: 55px; left: 50%; transform: translateX(-50%);
+      white-space: nowrap; font-size: 0.9rem; color: var(--gray); font-weight: 500;
+    }
+    .step.active .step-label { color: var(--primary); font-weight: 600; }
+
+    /* Form Container */
+    .form-container {
+      background: white; border-radius: var(--border-radius); box-shadow: var(--shadow);
+      overflow: hidden; margin-bottom: 40px; animation: slideInUp 0.8s ease-out 0.4s both;
+    }
+    .form-step { padding: 40px; display: none; }
+    .form-step.active { display: block; animation: fadeIn 0.6s ease-out; }
+    .step-header { margin-bottom: 35px; text-align: center; }
+    .step-header h2 { color: var(--primary); margin-bottom: 15px; font-size: 1.8rem; }
+    .step-header p { color: var(--gray); font-size: 1.1rem; }
+
+    .form-group { margin-bottom: 25px; }
+    .form-group label { display: block; margin-bottom: 10px; font-weight: 600; }
+    .form-control {
+      width: 100%; padding: 15px 20px; border: 2px solid var(--gray-light);
+      border-radius: var(--border-radius); font-size: 1rem; background: white;
+      transition: var(--transition);
+    }
+    .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(67,97,238,0.2); }
+    .error-message { color: var(--danger); font-size: 0.9rem; margin-top: 8px; display: none; }
+
+    /* Department Cards */
+    .department-selection { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    .department-card {
+      background: linear-gradient(135deg, #f0f4ff 0%, #e6eeff 100%);
+      border: 3px solid var(--gray-light); border-radius: var(--border-radius);
+      padding: 25px; text-align: center; cursor: pointer; transition: var(--transition);
+      position: relative; overflow: hidden;
+    }
+    .department-card:hover { transform: translateY(-8px) scale(1.02); box-shadow: var(--shadow-hover); }
+    .department-card.selected { border-color: var(--primary); background: linear-gradient(135deg, #e6eeff 0%, #d0dcff 100%); }
+    .department-card i { font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; }
+    .department-card h3 { color: var(--primary); margin-bottom: 8px; }
+    .department-card p { color: var(--gray); font-size: 0.9rem; }
+
+    /* Location */
+    .location-section {
+      background: var(--gray-light); border-radius: var(--border-radius); padding: 25px;
+      margin-bottom: 25px; text-align: center;
+    }
+    .location-section i { font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; }
+    .location-details { background: white; padding: 20px; border-radius: var(--border-radius); margin-top: 20px; text-align: left; }
+    .address-details { margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 12px; }
+    .address-line { margin-bottom: 8px; }
+
+    /* Media */
+    .media-options { display: flex; gap: 15px; margin-bottom: 25px; }
+    .media-option {
+      flex: 1; text-align: center; padding: 20px; background: var(--gray-light);
+      border-radius: var(--border-radius); cursor: pointer; border: 3px solid transparent;
+      transition: var(--transition);
+    }
+    .media-option.active { background: white; border-color: var(--primary); box-shadow: var(--shadow); }
+    .camera-container { position: relative; margin-bottom: 25px; border-radius: var(--border-radius); overflow: hidden; background: #000; }
+    #camera { width: 100%; display: block; }
+    .media-preview { width: 100%; border-radius: var(--border-radius); margin-bottom: 25px; display: none; }
+    .media-controls { display: flex; gap: 12px; justify-content: center; margin-bottom: 25px; flex-wrap: wrap; }
+
+    /* Buttons */
+    .btn {
+      padding: 15px 30px; border: none; border-radius: var(--border-radius); font-size: 1.1rem;
+      font-weight: 600; cursor: pointer; display: inline-flex; align-items: center;
+      justify-content: center; gap: 10px; transition: var(--transition);
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-3px); }
+    .btn-secondary { background: var(--gray-light); color: var(--dark); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-info { background: var(--secondary); color: white; }
+    .btn-warning { background: var(--warning); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+
+    .navigation { display: flex; justify-content: space-between; margin-top: 40px; }
+
+    /* Review Step (preview) */
+    .review-item { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid var(--gray-light); }
+    .review-label { font-weight: 600; color: var(--gray); margin-bottom: 8px; }
+    .review-value { color: var(--dark); word-break: break-word; font-size: 1.1rem; }
+    .review-media { max-width: 100%; border-radius: 12px; margin-top: 15px; }
+
+    .status-message {
+      padding: 20px; border-radius: var(--border-radius); margin-bottom: 25px;
+      text-align: center; font-weight: 600; display: none;
+    }
+    .status-success { background: #d4edda; color: #155724; }
+    .status-error { background: #f8d7da; color: #721c24; }
+
+    .hidden { display: none !important; }
+    .spinner {
+      display: inline-block; width: 25px; height: 25px; border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%; border-top-color: #fff; animation: spin 1s linear infinite;
+    }
+
+    @media (max-width: 768px) {
+      .step-label { display: none; }
+      .media-options { flex-direction: column; }
+      .navigation { flex-direction: column; gap: 15px; }
+      .department-selection { grid-template-columns: 1fr; }
+    }
+
+
+    /* Replace the existing sidebar-related styles with these */
+.sidebar {
+    width: 400px;
+    background: white;
+    border-right: 1px solid var(--gray-light);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease, width 0.3s ease;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.08);
+    z-index: 500;
+    flex-shrink: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.sidebar.collapsed {
+    width: 60px;
+}
+
+.sidebar.collapsed .sidebar-title h3,
+.sidebar.collapsed .complaint-count,
+.sidebar.collapsed .stats-bar,
+.sidebar.collapsed .status-filters,
+.sidebar.collapsed .complaint-card .complaint-description,
+.sidebar.collapsed .complaint-card .complaint-location,
+.sidebar.collapsed .complaint-card .complaint-meta,
+.sidebar.collapsed .complaint-card .evidence-thumbnail,
+.sidebar.collapsed .complaint-card .vote-section,
+.sidebar.collapsed .search-box {
+    display: none;
+}
+
+.sidebar-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--gray-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    flex-shrink: 0;
+}
+
+.sidebar-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sidebar-title h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--secondary);
+}
+
+.complaint-count {
+    background: var(--primary);
+    color: white;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+}
+
+.sidebar-toggle {
+    background: none;
+    border: none;
+    color: var(--gray);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    transition: var(--transition);
+}
+
+.stats-bar {
+    display: flex;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--gray-light);
+    background: white;
+    flex-shrink: 0;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    padding: 6px 4px;
+    border-radius: 6px;
+    background: var(--light);
+}
+
+.stat-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.stat-label {
+    font-size: 0.6rem;
+    color: var(--gray);
+    margin-top: 2px;
+}
+
+.status-filters {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--gray-light);
+    background: var(--primary-light);
+    flex-shrink: 0;
+}
+
+.filter-options {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 5px 8px;
+    border: 1px solid var(--gray-light);
+    border-radius: 16px;
+    background: white;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+/* THIS IS THE KEY - Make complaint list scrollable and take all remaining space */
+.complaint-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 10px 12px;
+    min-height: 0;
+}
+
+.complaint-card {
+    background: white;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--gray-light);
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+}
+
+.complaint-card:hover {
+    transform: translateX(3px);
+    box-shadow: var(--hover-shadow);
+    border-left: 3px solid var(--primary);
+}
+
+.complaint-card.selected {
+    border-left: 3px solid var(--primary);
+    background: var(--primary-light);
+}
+
+.complaint-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    align-items: flex-start;
+}
+
+.complaint-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--secondary);
+}
+
+.complaint-department {
+    background: var(--primary-light);
+    color: var(--primary);
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.65rem;
+    font-weight: 500;
+}
+
+.complaint-location {
+    font-size: 0.7rem;
+    color: var(--gray);
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.complaint-description {
+    font-size: 0.8rem;
+    margin-bottom: 6px;
+    line-height: 1.3;
+}
+
+.evidence-thumbnail {
+    width: 100%;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin: 6px 0;
+    cursor: pointer;
+}
+
+.complaint-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    color: var(--gray);
+    margin-bottom: 5px;
+}
+
+.vote-section {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px solid var(--gray-light);
+}
+
+.vote-btn {
+    background: var(--gray-light);
+    border: none;
+    border-radius: 16px;
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    transition: var(--transition);
+}
+
+.vote-count {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--secondary);
+}
+
+/* Custom Scrollbar for complaint list */
+.complaint-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.complaint-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.complaint-list::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 3px;
+}
+
+.complaint-list::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary);
+}
+  </style>
+</head>
+<body>
+<div class="container">
+  <section class="hero">
+    <h1><i class="fas fa-bullhorn"></i> Smart Complaint Hub</h1>
+    <p>Report civic issues with advanced features</p>
+  </section>
+
+  <!-- Progress Bar -->
+  <div class="progress-container">
+    <div class="progress-bar">
+      <div class="progress" id="progress" style="width:0%"></div>
+      <div class="step active" id="step1"><span>1</span><div class="step-label">Department</div></div>
+      <div class="step" id="step2"><span>2</span><div class="step-label">Details</div></div>
+      <div class="step" id="step3"><span>3</span><div class="step-label">Location</div></div>
+      <div class="step" id="step4"><span>4</span><div class="step-label">Media</div></div>
+      <div class="step" id="step5"><span>5</span><div class="step-label">Review</div></div>
+    </div>
+  </div>
+
+  <div class="form-container">
+    <!-- Step 1: Department -->
+    <div class="form-step active" id="step1-form">
+      <div class="step-header"><h2>Department Selection</h2><p>Choose the relevant department</p></div>
+      <div class="department-selection">
+        <div class="department-card" data-dept="Roads & Infrastructure"><i class="fas fa-road"></i><h3>Roads & Infrastructure</h3><p>Potholes, road damage, traffic signals</p></div>
+        <div class="department-card" data-dept="Sanitation"><i class="fas fa-trash"></i><h3>Sanitation</h3><p>Garbage collection, waste management</p></div>
+        <div class="department-card" data-dept="Electricity"><i class="fas fa-bolt"></i><h3>Electricity</h3><p>Power outages, street lights, electrical issues</p></div>
+        <div class="department-card" data-dept="Water Supply"><i class="fas fa-tint"></i><h3>Water Supply</h3><p>Water leaks, supply issues, quality problems</p></div>
+        <div class="department-card" data-dept="Others"><i class="fas fa-ellipsis-h"></i><h3>Other Issues</h3><p>Any other civic issues</p></div>
+      </div>
+      <div class="navigation"><button class="btn btn-secondary" disabled><i class="fas fa-arrow-left"></i> Previous</button><button class="btn btn-primary" id="nextToStep2">Next <i class="fas fa-arrow-right"></i></button></div>
+    </div>
+
+    <!-- Step 2: Details -->
+    <div class="form-step" id="step2-form">
+      <div class="step-header"><h2>Complaint Details</h2><p>Provide your information and describe the issue</p></div>
+      <div class="form-group"><label><i class="fas fa-user"></i> Your Name</label><input type="text" id="name" class="form-control" placeholder="Enter your full name"><div class="error-message" id="nameError">Please enter your name</div></div>
+      <div class="form-group"><label><i class="fas fa-phone"></i> Phone Number</label><input type="tel" id="phone" class="form-control" placeholder="10-digit number" maxlength="10"><div class="error-message" id="phoneError">Valid 10-digit number required</div></div>
+      <div class="form-group"><label><i class="fas fa-comment-alt"></i> Complaint Details</label><textarea id="details" class="form-control" rows="5" placeholder="Describe the issue..."></textarea><div class="error-message" id="detailsError">Please provide details</div></div>
+      <div class="navigation"><button class="btn btn-secondary" id="prevToStep1"><i class="fas fa-arrow-left"></i> Previous</button><button class="btn btn-primary" id="nextToStep3">Next <i class="fas fa-arrow-right"></i></button></div>
+    </div>
+
+    <!-- Step 3: Location -->
+    <div class="form-step" id="step3-form">
+      <div class="step-header"><h2>Location Details</h2><p>We'll automatically detect your location</p></div>
+      <div class="location-section">
+        <i class="fas fa-map-marker-alt"></i>
+        <p>We're detecting your current location to tag your complaint</p>
+        <button class="btn btn-primary" id="detectLocation"><i class="fas fa-location-arrow"></i> Detect My Location</button>
+        <div class="location-details hidden" id="locationDetails">
+          <p><strong>Detected Location:</strong></p>
+          <div class="address-details"><div class="address-line" id="streetAddress">Fetching location...</div></div>
+          <button class="btn btn-secondary" id="refreshLocation" style="margin-top:10px;"><i class="fas fa-sync-alt"></i> Refresh</button>
+        </div>
+      </div>
+      <div class="navigation"><button class="btn btn-secondary" id="prevToStep2">Previous</button><button class="btn btn-primary" id="nextToStep4">Next</button></div>
+    </div>
+
+    <!-- Step 4: Media (Photo & Video with Geo-tag) -->
+    <div class="form-step" id="step4-form">
+      <div class="step-header"><h2>Add Media Evidence</h2><p>Capture a geo‑tagged photo or video</p></div>
+      <div class="media-options">
+        <div class="media-option active" data-type="photo"><i class="fas fa-camera"></i><p>Take Photo</p></div>
+        <div class="media-option" data-type="video"><i class="fas fa-video"></i><p>Record Video</p></div>
+      </div>
+      <div class="camera-container hidden" id="cameraContainer"><video id="camera" autoplay playsinline></video></div>
+      <img id="photoPreview" class="media-preview" alt="Preview">
+      <video id="videoPreview" class="media-preview" controls></video>
+      <div class="media-controls">
+        <button class="btn btn-primary" id="openCameraBtn"><i class="fas fa-camera"></i> Open Camera</button>
+        <button class="btn btn-success hidden" id="capturePhotoBtn"><i class="fas fa-camera"></i> Capture Photo</button>
+        <button class="btn btn-success hidden" id="startVideoBtn"><i class="fas fa-video"></i> Start Recording</button>
+        <button class="btn btn-danger hidden" id="stopVideoBtn"><i class="fas fa-stop"></i> Stop Recording</button>
+        <button class="btn btn-danger hidden" id="stopCameraBtn"><i class="fas fa-times"></i> Stop Camera</button>
+        <button class="btn btn-warning hidden" id="deleteMediaBtn"><i class="fas fa-trash"></i> Delete Media</button>
+      </div>
+      <div class="navigation"><button class="btn btn-secondary" id="prevToStep3">Previous</button><button class="btn btn-primary" id="nextToStep5">Next</button></div>
+    </div>
+
+    <!-- Step 5: Review & Submit -->
+    <div class="form-step" id="step5-form">
+      <div class="step-header"><h2>Review Your Complaint</h2><p>Please verify all information before submitting</p></div>
+      <div class="review-item"><div class="review-label">Department</div><div class="review-value" id="reviewDept"></div></div>
+      <div class="review-item"><div class="review-label">Your Details</div><div class="review-value" id="reviewPersonal"></div></div>
+      <div class="review-item"><div class="review-label">Complaint Details</div><div class="review-value" id="reviewDetails"></div></div>
+      <div class="review-item"><div class="review-label">Location</div><div class="review-value" id="reviewLocation"></div></div>
+      <div class="review-item"><div class="review-label">Media Evidence</div><div class="review-value" id="reviewMedia"></div><img id="reviewPhoto" class="review-media hidden" alt="Photo"><video id="reviewVideo" class="review-media hidden" controls></video></div>
+      <div class="status-message" id="statusMsg"></div>
+      <div class="navigation">
+        <button class="btn btn-secondary" id="prevToStep4">Previous</button>
+        <button class="btn btn-success" id="submitComplaint"><i class="fas fa-paper-plane"></i> Submit Complaint</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;">
+    <button class="btn btn-info" id="viewStatusBtn"><i class="fas fa-clipboard-list"></i> View Complaint Status</button>
+  </div>
+</div>
+
+<canvas id="confettiCanvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999;"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script>
+  (function(){
+    const SUPABASE_URL = "https://vbxvxqxzdhloklxrcgvb.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZieHZ4cXh6ZGhsb2tseHJjZ3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MTI4NDcsImV4cCI6MjA5MDI4ODg0N30.arjQZaDWHBt3E8IffvaRE07pWbCC6-RSvLHK2uLmHsU";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const steps = document.querySelectorAll('.step');
+    const progress = document.getElementById('progress');
+    const forms = document.querySelectorAll('.form-step');
+    let department = "Not Selected", userLocation = { lat: null, lng: null, address: "Not detected" };
+    let stream = null, mediaRecorder = null, recordedChunks = [];
+    let mediaFile = null, mediaUrl = null, mediaType = null;
+    let submissionDone = false;
+
+    // Load saved phone
+    const savedPhone = localStorage.getItem('userPhone');
+    if (savedPhone) {
+      document.getElementById('phone').value = savedPhone;
+    }
+
+    function changeStep(step) {
+      if(submissionDone && step!==5) return;
+      forms.forEach(f=>f.classList.remove('active')); steps.forEach(s=>s.classList.remove('active','completed'));
+      document.getElementById(`step${step}-form`).classList.add('active');
+      for(let i=1; i<=step; i++) {
+        const s = document.getElementById(`step${i}`);
+        if(i<step) s.classList.add('completed'); else if(i===step) s.classList.add('active');
+      }
+      progress.style.width = ((step-1)/4*100)+'%';
+      if(step===5) updateReview();
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+
+    function updateReview() {
+      document.getElementById('reviewDept').textContent = department;
+      document.getElementById('reviewPersonal').textContent = `${nameInput.value||'—'} (${phoneInput.value||'—'})`;
+      document.getElementById('reviewDetails').textContent = detailsInput.value||'—';
+      document.getElementById('reviewLocation').textContent = userLocation.address;
+      const mediaEl = document.getElementById('reviewMedia');
+      const imgEl = document.getElementById('reviewPhoto');
+      const vidEl = document.getElementById('reviewVideo');
+      imgEl.classList.add('hidden'); vidEl.classList.add('hidden');
+      if(mediaFile) {
+        if(mediaType === 'photo') { mediaEl.textContent = '✅ Geo‑tagged photo captured'; imgEl.src = mediaUrl; imgEl.classList.remove('hidden'); }
+        else if(mediaType === 'video') { mediaEl.textContent = '✅ Geo‑tagged video recorded'; vidEl.src = mediaUrl; vidEl.classList.remove('hidden'); }
+      } else { mediaEl.textContent = '❌ No media'; }
+    }
+
+    function addGeoTagToMedia(blob, type, callback) {
+      if(type === 'photo') {
+        const img = new Image(); img.src = URL.createObjectURL(blob);
+        img.onload = () => {
+          const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height;
+          const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0);
+          ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0, canvas.height-90, canvas.width, 90);
+          ctx.fillStyle = 'white'; ctx.font = 'bold 16px Segoe UI';
+          ctx.fillText(`📍 ${userLocation.address.substring(0,50)}`, 15, canvas.height-55);
+          ctx.fillText(`🕒 ${new Date().toLocaleString()}`, 15, canvas.height-25);
+          ctx.fillText(`🌐 Lat: ${userLocation.lat?.toFixed(5)||'?'} Lng: ${userLocation.lng?.toFixed(5)||'?'}`, 15, canvas.height-5);
+          canvas.toBlob(cb => callback(cb), 'image/png');
+        };
+      } else if(type === 'video') {
+        callback(blob);
+      }
+    }
+
+    function showConfetti() {
+      const canvas = document.getElementById('confettiCanvas'); const ctx = canvas.getContext('2d');
+      canvas.width=window.innerWidth; canvas.height=window.innerHeight;
+      let particles = []; for(let i=0;i<100;i++) particles.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height-canvas.height,size:Math.random()*8+4,color:`hsl(${Math.random()*360},80%,60%)`,speed:Math.random()*5+3});
+      let anim=true; function draw(){ if(!anim)return; ctx.clearRect(0,0,canvas.width,canvas.height); let allDown=true;
+        particles.forEach(p=>{p.y+=p.speed; if(p.y<canvas.height+50)allDown=false; ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,p.size,p.size);});
+        if(allDown){anim=false;ctx.clearRect(0,0,canvas.width,canvas.height);}else requestAnimationFrame(draw);
+      } draw(); setTimeout(()=>anim=false,3000);
+    }
+
+    // Department select
+    document.querySelectorAll('.department-card').forEach(c=>c.addEventListener('click',()=>{
+      if(submissionDone)return; document.querySelectorAll('.department-card').forEach(d=>d.classList.remove('selected'));
+      c.classList.add('selected'); department = c.dataset.dept;
+      setTimeout(()=>changeStep(2),150);
+    }));
+
+    const nameInput=document.getElementById('name'), phoneInput=document.getElementById('phone'), detailsInput=document.getElementById('details');
+    
+    // Save phone as user types
+    phoneInput.addEventListener('input', () => {
+      if (phoneInput.value.length === 10) {
+        localStorage.setItem('userPhone', phoneInput.value);
+      }
+    });
+
+    document.getElementById('nextToStep2').onclick=()=>{if(department==="Not Selected")alert('Select department');else changeStep(2);};
+    document.getElementById('prevToStep1').onclick=()=>changeStep(1);
+    document.getElementById('nextToStep3').onclick=()=>{
+      if(!nameInput.value.trim()){document.getElementById('nameError').style.display='block';return;} else document.getElementById('nameError').style.display='none';
+      if(!/^\d{10}$/.test(phoneInput.value)){document.getElementById('phoneError').style.display='block';return;} else document.getElementById('phoneError').style.display='none';
+      if(!detailsInput.value.trim()){document.getElementById('detailsError').style.display='block';return;} else document.getElementById('detailsError').style.display='none';
+      localStorage.setItem('userPhone', phoneInput.value);
+      changeStep(3);
+    };
+    document.getElementById('prevToStep2').onclick=()=>changeStep(2);
+    document.getElementById('nextToStep4').onclick=()=>{
+      if(!userLocation.lat){alert('Detect location first');return;}
+      changeStep(4);
+    };
+    document.getElementById('prevToStep3').onclick=()=>changeStep(3);
+    document.getElementById('nextToStep5').onclick=()=>changeStep(5);
+    document.getElementById('prevToStep4').onclick=()=>changeStep(4);
+
+    // location
+    document.getElementById('detectLocation').onclick=()=>{
+      navigator.geolocation.getCurrentPosition(async pos=>{
+        userLocation.lat=pos.coords.latitude; userLocation.lng=pos.coords.longitude;
+        try{ const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userLocation.lat}&lon=${userLocation.lng}&format=json`);
+          const d=await r.json(); userLocation.address=d.display_name||`${userLocation.lat}, ${userLocation.lng}`;
+        }catch(e){ userLocation.address=`${userLocation.lat}, ${userLocation.lng}`; }
+        document.getElementById('streetAddress').textContent=userLocation.address;
+        document.getElementById('locationDetails').classList.remove('hidden');
+      },()=>alert('Location access denied'));
+    };
+    document.getElementById('refreshLocation').onclick=()=>document.getElementById('detectLocation').click();
+
+    // Camera & Media elements
+    const camera=document.getElementById('camera'), camContainer=document.getElementById('cameraContainer');
+    const openCam=document.getElementById('openCameraBtn'), captureBtn=document.getElementById('capturePhotoBtn');
+    const startVid=document.getElementById('startVideoBtn'), stopVid=document.getElementById('stopVideoBtn');
+    const stopCam=document.getElementById('stopCameraBtn'), delMedia=document.getElementById('deleteMediaBtn');
+    const photoPreview=document.getElementById('photoPreview'), videoPreview=document.getElementById('videoPreview');
+    const mediaOptions = document.querySelectorAll('.media-option');
+    let currentMediaMode = 'photo';
+
+    mediaOptions.forEach(opt => opt.addEventListener('click', () => {
+      mediaOptions.forEach(o=>o.classList.remove('active')); opt.classList.add('active');
+      currentMediaMode = opt.dataset.type;
+      if(currentMediaMode==='photo') { captureBtn.classList.remove('hidden'); startVid.classList.add('hidden'); stopVid.classList.add('hidden'); }
+      else { captureBtn.classList.add('hidden'); startVid.classList.remove('hidden'); stopVid.classList.add('hidden'); }
+    }));
+
+    openCam.onclick=async()=>{
+      stream=await navigator.mediaDevices.getUserMedia({video: true, audio: currentMediaMode==='video'});
+      camera.srcObject=stream; camContainer.classList.remove('hidden');
+      if(currentMediaMode==='photo') { captureBtn.classList.remove('hidden'); startVid.classList.add('hidden'); }
+      else { startVid.classList.remove('hidden'); captureBtn.classList.add('hidden'); }
+      stopCam.classList.remove('hidden'); openCam.classList.add('hidden');
+    };
+
+    captureBtn.onclick=()=>{
+      const canvas=document.createElement('canvas'); canvas.width=camera.videoWidth; canvas.height=camera.videoHeight;
+      const ctx=canvas.getContext('2d'); ctx.drawImage(camera,0,0);
+      canvas.toBlob(blob => {
+        addGeoTagToMedia(blob, 'photo', geoBlob => {
+          mediaFile = new File([geoBlob], "geo-photo.png", {type:"image/png"});
+          mediaUrl = URL.createObjectURL(geoBlob); mediaType = 'photo';
+          photoPreview.src = mediaUrl; photoPreview.style.display='block'; videoPreview.style.display='none';
+          delMedia.classList.remove('hidden');
+          stopCamera();
+        });
+      }, 'image/png');
+    };
+
+    startVid.onclick=()=>{
+      recordedChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, {type: 'video/webm'});
+        mediaFile = new File([blob], "geo-video.webm", {type:"video/webm"});
+        mediaUrl = URL.createObjectURL(blob); mediaType = 'video';
+        videoPreview.src = mediaUrl; videoPreview.style.display='block'; photoPreview.style.display='none';
+        delMedia.classList.remove('hidden');
+        stopCamera();
+      };
+      mediaRecorder.start();
+      startVid.classList.add('hidden'); stopVid.classList.remove('hidden');
+    };
+    stopVid.onclick=()=>{ if(mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.stop(); };
+
+    function stopCamera() {
+      if(stream) { stream.getTracks().forEach(t=>t.stop()); stream=null; }
+      camContainer.classList.add('hidden'); captureBtn.classList.add('hidden'); startVid.classList.add('hidden');
+      stopVid.classList.add('hidden'); stopCam.classList.add('hidden'); openCam.classList.remove('hidden');
+    }
+    stopCam.onclick = stopCamera;
+
+    delMedia.onclick=()=>{
+      mediaFile=null; if(mediaUrl) URL.revokeObjectURL(mediaUrl); mediaUrl=null; mediaType=null;
+      photoPreview.style.display='none'; videoPreview.style.display='none'; delMedia.classList.add('hidden');
+    };
+
+    // Submit complaint
+    document.getElementById('submitComplaint').onclick=async()=>{
+      if(submissionDone)return;
+      if(department==="Not Selected"){alert('Select department');changeStep(1);return;}
+      if(!nameInput.value.trim()||!/^\d{10}$/.test(phoneInput.value)||!detailsInput.value.trim()){alert('Complete details');changeStep(2);return;}
+      if(!userLocation.lat){alert('Detect location');changeStep(3);return;}
+      
+      const statusDiv=document.getElementById('statusMsg');
+      statusDiv.innerHTML='<div class="spinner"></div> Submitting...'; statusDiv.style.display='block';
+      
+      try{
+        let photoURL = null, videoURL = null;
+        if(mediaFile){
+          const ext = mediaType==='photo' ? 'png' : 'webm';
+          const fileName = `${Date.now()}.${ext}`;
+          await supabase.storage.from('complaint-media').upload(fileName, mediaFile);
+          const {data} = supabase.storage.from('complaint-media').getPublicUrl(fileName);
+          if(mediaType==='photo') photoURL = data.publicUrl;
+          else videoURL = data.publicUrl;
+        }
+        
+        await supabase.from('complaints').insert([{
+          name: nameInput.value.trim(),
+          phone: phoneInput.value.trim(),
+          details: detailsInput.value.trim(),
+          department: department,
+          location: userLocation.address,
+          latitude: userLocation.lat,
+          longitude: userLocation.lng,
+          photo: photoURL,
+          video: videoURL,
+          status: 'Pending',
+          created_at: new Date().toISOString()
+        }]);
+        
+        submissionDone = true;
+        localStorage.setItem('userPhone', phoneInput.value.trim());
+        
+        statusDiv.innerHTML = '✅ Complaint Submitted Successfully!';
+        statusDiv.className = 'status-message status-success';
+        showConfetti();
+        document.getElementById('submitComplaint').disabled = true;
+        
+        // Auto-redirect to status page after 1.5 seconds
+        setTimeout(() => {
+          window.location.href = 'status.html';
+        }, 1500);
+        
+      } catch(e) { 
+        statusDiv.innerHTML = `❌ Error: ${e.message}`; 
+        statusDiv.className = 'status-message status-error'; 
+      }
+    };
+
+    // View Status button - FIXED
+    document.getElementById('viewStatusBtn').onclick = function(e) {
+      e.preventDefault();
+      const phone = phoneInput.value.trim();
+      if (phone && /^\d{10}$/.test(phone)) {
+        localStorage.setItem('userPhone', phone);
+      }
+      window.location.href = 'status.html';
+    };
+  })();
+</script>
+</body>
+</html>

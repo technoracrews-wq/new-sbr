@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SiteScan - Vote for Issues</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 20px 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            font-size: 2rem;
+            color: #4361ee;
+        }
+
+        .logo h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .back-link {
+            color: #4361ee;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #eef2ff;
+            border-radius: 25px;
+            transition: 0.2s;
+        }
+
+        .back-link:hover {
+            background: #4361ee;
+            color: white;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .stat-card {
+            text-align: center;
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4361ee;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+
+        /* Complaint Grid */
+        .complaints-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 25px;
+        }
+
+        .complaint-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .complaint-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            padding: 15px 20px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .department {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .vote-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .complaint-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #212529;
+        }
+
+        .complaint-location {
+            color: #6c757d;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .complaint-details {
+            color: #495057;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        /* Evidence Image */
+        .evidence-image {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .evidence-image:hover {
+            transform: scale(1.02);
+        }
+
+        .complaint-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #adb5bd;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .status {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-progress {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        .status-resolved {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .vote-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .vote-btn {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+        }
+
+        .vote-btn:hover:not(:disabled) {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+        }
+
+        .vote-btn:disabled {
+            background: #adb5bd;
+            cursor: not-allowed;
+        }
+
+        .vote-count {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #4361ee;
+        }
+
+        .already-voted {
+            color: #10b981;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            font-size: 1.2rem;
+            color: #6c757d;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            background: white;
+            border-radius: 16px;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: #adb5bd;
+            margin-bottom: 15px;
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toast {
+            background: white;
+            border-radius: 8px;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+            border-left: 4px solid #10b981;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            border-left-color: #ef4444;
+        }
+
+        /* Image Modal */
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .image-modal.active {
+            display: flex;
+        }
+
+        .image-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .complaints-grid {
+                grid-template-columns: 1fr;
+            }
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <i class="fas fa-heart"></i>
+                <h1>Vote for Issues</h1>
+            </div>
+            <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Home</a>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-number" id="statTotal">0</div>
+                <div class="stat-label">Total Issues</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="statVotes">0</div>
+                <div class="stat-label">Total Votes</div>
+            </div>
+        </div>
+
+        <div id="complaintsContainer" class="complaints-grid">
+            <div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading issues...</div>
+        </div>
+    </div>
+
+    <div class="image-modal" id="imageModal" onclick="closeImageModal()">
+        <img id="modalImage" src="" alt="">
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // Supabase configuration
+        const SUPABASE_URL = "https://vbxvxqxzdhloklxrcgvb.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZieHZ4cXh6ZGhsb2tseHJjZ3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MTI4NDcsImV4cCI6MjA5MDI4ODg0N30.arjQZaDWHBt3E8IffvaRE07pWbCC6-RSvLHK2uLmHsU";
+        
+        let supabaseClient;
+        let complaints = [];
+
+        // Track voted complaints in localStorage (no login required)
+        let votedIds = JSON.parse(localStorage.getItem('voted_complaints') || '[]');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            await loadComplaints();
+            setupRealtime();
+        });
+
+        // Load complaints sorted by votes (highest first)
+        async function loadComplaints() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('complaints')
+                    .select('*')
+                    .order('votes', { ascending: false })
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                complaints = data || [];
+                renderComplaints();
+                updateStats();
+            } catch (err) {
+                console.error(err);
+                showToast('Error loading complaints', 'error');
+            }
+        }
+
+        function normalizeStatus(status) {
+            const s = (status || '').toLowerCase();
+            if (s === 'pending') return 'Pending';
+            if (s === 'in progress' || s === 'in-progress') return 'In Progress';
+            if (s === 'solved' || s === 'resolved') return 'Resolved';
+            return status;
+        }
+
+        function getStatusClass(status) {
+            const s = normalizeStatus(status);
+            if (s === 'Pending') return 'status-pending';
+            if (s === 'In Progress') return 'status-progress';
+            return 'status-resolved';
+        }
+
+        // Get image URL from photo field
+        function getImageUrl(photo) {
+            if (!photo) return null;
+            if (Array.isArray(photo) && photo.length) photo = photo[0];
+            if (typeof photo === 'string' && photo.startsWith('[')) {
+                try {
+                    const arr = JSON.parse(photo);
+                    if (arr.length) photo = arr[0];
+                } catch(e) {}
+            }
+            if (typeof photo !== 'string') return null;
+            if (photo.startsWith('http')) return photo;
+            return `${SUPABASE_URL}/storage/v1/object/public/Complaint-media/${photo}`;
+        }
+
+        function renderComplaints() {
+            const container = document.getElementById('complaintsContainer');
+            
+            if (!complaints.length) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h3>No Issues Yet</h3>
+                        <p>Be the first to report an issue and get votes!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = complaints.map(complaint => {
+                const hasVoted = votedIds.includes(complaint.id);
+                const displayStatus = normalizeStatus(complaint.status);
+                const statusClass = getStatusClass(complaint.status);
+                const imageUrl = getImageUrl(complaint.photo);
+                
+                return `
+                    <div class="complaint-card" data-id="${complaint.id}">
+                        <div class="card-header">
+                            <span class="department">${escapeHtml(complaint.department || 'General')}</span>
+                            <span class="vote-badge"><i class="fas fa-thumbs-up"></i> ${complaint.votes || 0} votes</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="complaint-name">${escapeHtml(complaint.name || 'Anonymous')}</div>
+                            <div class="complaint-location"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(complaint.location || 'Unknown')}</div>
+                            <div class="complaint-details">${escapeHtml((complaint.details || '').substring(0, 150))}${(complaint.details || '').length > 150 ? '...' : ''}</div>
+                            ${imageUrl ? `<img src="${imageUrl}" class="evidence-image" onclick="event.stopPropagation(); openImageModal('${imageUrl}')" onerror="this.style.display='none'" alt="Evidence">` : ''}
+                            <div class="complaint-meta">
+                                <span><i class="far fa-calendar"></i> ${formatDate(complaint.created_at)}</span>
+                                <span class="status ${statusClass}">${displayStatus}</span>
+                            </div>
+                            <div class="vote-section">
+                                <button class="vote-btn" data-id="${complaint.id}" ${hasVoted ? 'disabled' : ''}>
+                                    <i class="fas fa-thumbs-up"></i> ${hasVoted ? 'Already Voted' : 'Support this issue'}
+                                </button>
+                                ${hasVoted ? '<span class="already-voted"><i class="fas fa-check-circle"></i> You supported this</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Attach vote event listeners
+            document.querySelectorAll('.vote-btn[data-id]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = btn.dataset.id;
+                    voteComplaint(id);
+                });
+            });
+        }
+
+        async function voteComplaint(id) {
+            const complaint = complaints.find(c => c.id === id);
+            if (!complaint) return;
+
+            if (votedIds.includes(id)) {
+                showToast('You already voted for this issue', 'error');
+                return;
+            }
+
+            const newVotes = (complaint.votes || 0) + 1;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('complaints')
+                    .update({ votes: newVotes })
+                    .eq('id', id);
+                
+                if (error) throw error;
+
+                // Update local data
+                complaint.votes = newVotes;
+                
+                // Add to votedIds and save to localStorage
+                votedIds.push(id);
+                localStorage.setItem('voted_complaints', JSON.stringify(votedIds));
+                
+                // Re-sort complaints by votes
+                complaints.sort((a, b) => (b.votes || 0) - (a.votes || 0));
+                renderComplaints();
+                updateStats();
+                showToast('Thank you for supporting!', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast('Error voting: ' + err.message, 'error');
+            }
+        }
+
+        function updateStats() {
+            const total = complaints.length;
+            const totalVotes = complaints.reduce((sum, c) => sum + (c.votes || 0), 0);
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statVotes').textContent = totalVotes;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'Unknown';
+            try {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diff = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+                if (diff === 0) return 'Today';
+                if (diff === 1) return 'Yesterday';
+                if (diff < 7) return `${diff} days ago`;
+                return date.toLocaleDateString();
+            } catch {
+                return 'Invalid';
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i><span>${escapeHtml(message)}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function setupRealtime() {
+            supabaseClient.channel('complaints-vote')
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'complaints'
+                }, async (payload) => {
+                    console.log('Realtime update:', payload.eventType);
+                    await loadComplaints();
+                })
+                .subscribe();
+        }
+
+        // Image modal functions
+        window.openImageModal = function(src) {
+            const modal = document.getElementById('imageModal');
+            const img = document.getElementById('modalImage');
+            img.src = src;
+            modal.classList.add('active');
+        };
+
+        window.closeImageModal = function() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('active');
+        };
+    </script>
+</body>
+</html>

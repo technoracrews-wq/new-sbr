@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roads & Transport Department - Smart Complaints Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+  <style>
+    :root {
+      --primary-color: #d97706;
+      --primary-dark: #b45309;
+      --primary-light: #f59e0b;
+      --secondary-color: #ca8a04;
+      --danger-color: #dc2626;
+      --warning-color: #ea580c;
+    }
+    
+    body { 
+      font-family: 'Segoe UI', system-ui, sans-serif; 
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      margin: 0;
+      transition: background-color 0.3s ease;
+    }
+    
+    .dark-mode {
+      background: linear-gradient(135deg, #1c1917 0%, #292524 100%);
+      color: #f8fafc;
+    }
+    
+    .status-badge {
+      font-weight: bold;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      display: inline-block;
+      transition: all 0.3s ease;
+    }
+    
+    .pending { 
+      background: #fee2e2; 
+      color: #dc2626; 
+      border: 1px solid #fecaca; 
+    }
+    
+    .dark-mode .pending {
+      background: rgba(220, 38, 38, 0.2);
+      color: #fca5a5;
+    }
+    
+    .progress { 
+      background: #ffedd5; 
+      color: #ea580c; 
+      border: 1px solid #16110b; 
+    }
+    
+    .dark-mode .progress {
+      background: rgba(234, 88, 12, 0.2);
+      color: #fdba74;
+    }
+    
+    .solved { 
+      background: #d1fae5; 
+      color: #059669; 
+      border: 1px solid #a7f3d0; 
+    }
+    
+    .dark-mode .solved {
+      background: rgba(5, 150, 105, 0.2);
+      color: #6ee7b7;
+    }
+    
+    .card-hover {
+      transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    }
+    
+    .card-hover:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.15);
+    }
+    
+    .dark-mode .card-hover:hover {
+      box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.4);
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .media-preview {
+      transition: transform 0.2s ease;
+      cursor: pointer;
+    }
+    
+    .media-preview:hover {
+      transform: scale(1.05);
+    }
+    
+    .priority-high { color: #dc2626; font-weight: bold; }
+    .priority-medium { color: #ea580c; font-weight: bold; }
+    .priority-low { color: #059669; font-weight: bold; }
+    
+    .loading-spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--primary-color);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 2s linear infinite;
+      margin: 0 auto;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .dark-card {
+      background-color: #292524;
+      color: #f8fafc;
+      border: 1px solid #44403c;
+    }
+    
+    .dark-header {
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    }
+    
+    .dark-input {
+      background-color: #1c1917;
+      color: #f8fafc;
+      border-color: #44403c;
+    }
+    
+    .dark-input:focus {
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.2);
+    }
+    
+    .floating-btn {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      cursor: pointer;
+      z-index: 100;
+      transition: all 0.3s ease;
+    }
+    
+    .floating-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+    }
+    
+    .floating-menu {
+      position: fixed;
+      bottom: 5rem;
+      right: 2rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      padding: 1rem;
+      z-index: 99;
+      transform: scale(0);
+      transform-origin: bottom right;
+      transition: transform 0.3s ease;
+    }
+    
+    .dark-mode .floating-menu {
+      background: #292524;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .floating-menu.active {
+      transform: scale(1);
+    }
+    
+    .floating-menu-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      margin-bottom: 0.5rem;
+    }
+    
+    .floating-menu-item:hover {
+      background-color: #f1f5f9;
+    }
+    
+    .dark-mode .floating-menu-item:hover {
+      background-color: #44403c;
+    }
+    
+    .floating-menu-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .floating-menu-item i {
+      margin-right: 0.75rem;
+      width: 20px;
+      text-align: center;
+    }
+    
+    .notification-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: var(--danger-color);
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: bold;
+    }
+    
+    .tab-button {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .tab-button.active {
+      background: var(--primary-color);
+      color: white;
+    }
+    
+    .dark-mode .tab-button:not(.active) {
+      color: #cbd5e1;
+    }
+    
+    .progress-bar {
+      height: 6px;
+      border-radius: 3px;
+      background-color: #e2e8f0;
+      overflow: hidden;
+    }
+    
+    .dark-mode .progress-bar {
+      background-color: #44403c;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+    
+    .progress-fill.pending { background-color: #dc2626; }
+    .progress-fill.progress { background-color: #ea580c; }
+    .progress-fill.solved { background-color: #059669; }
+    
+    .chart-container {
+      position: relative;
+      height: 200px;
+    }
+    
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    .slide-in {
+      animation: slideIn 0.5s ease-out;
+    }
+    
+    @keyframes slideIn {
+      from { transform: translateX(-20px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    
+    .bounce-in {
+      animation: bounceIn 0.6s ease-out;
+    }
+    
+    @keyframes bounceIn {
+      0% { transform: scale(0.3); opacity: 0; }
+      50% { transform: scale(1.05); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    .shimmer {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+    
+    .dark-mode .shimmer {
+      background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+      background-size: 200% 100%;
+    }
+    
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    
+    .quick-action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      border-radius: 12px;
+      background: white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      text-align: center;
+    }
+    
+    .dark-mode .quick-action-btn {
+      background: #292524;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    
+    .quick-action-btn:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    }
+    
+    .quick-action-btn i {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+    
+    .empty-state i {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+    
+    .dark-mode .empty-state i {
+      color: #94a3b8;
+    }
+    
+    .tooltip {
+      position: relative;
+    }
+    
+    .tooltip:before {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 10;
+    }
+    
+    .tooltip:hover:before {
+      opacity: 1;
+    }
+    
+    .dark-mode .tooltip:before {
+      background: rgba(255, 255, 255, 0.9);
+      color: #1c1917;
+    }
+    
+    .road-icon {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .road-icon::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .road-icon:hover::before {
+      opacity: 1;
+    }
+    
+    .dashboard-card {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .dashboard-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    }
+    
+    .pothole {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border-left: 4px solid #f59e0b;
+    }
+    
+    .dark-mode .pothole {
+      background: linear-gradient(135deg, #451a03, #7c2d12);
+      border-left: 4px solid #f59e0b;
+    }
+    
+    .traffic-light {
+      background: linear-gradient(135deg, #fee2e2, #fecaca);
+      border-left: 4px solid #ef4444;
+    }
+    
+    .dark-mode .traffic-light {
+      background: linear-gradient(135deg, #450a0a, #7f1d1d);
+      border-left: 4px solid #ef4444;
+    }
+    
+    .road-sign {
+      background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+      border-left: 4px solid #3b82f6;
+    }
+    
+    .dark-mode .road-sign {
+      background: linear-gradient(135deg, #1e3a8a, #1e40af);
+      border-left: 4px solid #3b82f6;
+    }
+    
+    .urgent-tag {
+      animation: urgentPulse 2s infinite;
+    }
+    
+    @keyframes urgentPulse {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+    
+    /* File Upload Styles */
+    .file-upload-area {
+      border: 2px dashed #d1d5db;
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .dark-mode .file-upload-area {
+      border-color: #475569;
+    }
+    
+    .file-upload-area:hover {
+      border-color: var(--primary-color);
+      background-color: rgba(217, 119, 6, 0.05);
+    }
+    
+    .dark-mode .file-upload-area:hover {
+      background-color: rgba(217, 119, 6, 0.1);
+    }
+    
+    .file-upload-area.dragover {
+      border-color: var(--primary-color);
+      background-color: rgba(217, 119, 6, 0.1);
+    }
+    
+    .photo-preview {
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: 8px;
+      margin-top: 1rem;
+      display: none;
+    }
+    
+    .upload-icon {
+      font-size: 2rem;
+      color: var(--primary-color);
+      margin-bottom: 0.5rem;
+    }
+    
+    /* Scrollable modal content */
+    .scrollable-modal {
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    /* Status modal specific styling for scroll */
+    .status-modal-content {
+      max-height: 70vh;
+      overflow-y: auto;
+      padding-right: 8px; /* To prevent content from being hidden behind scrollbar */
+    }
+    
+    /* Scrollbar styling */
+    .status-modal-content::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    .status-modal-content::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    .status-modal-content::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+    }
+    
+    .status-modal-content::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+    
+    .dark-mode .status-modal-content::-webkit-scrollbar-track {
+      background: #44403c;
+    }
+    
+    .dark-mode .status-modal-content::-webkit-scrollbar-thumb {
+      background: #78716c;
+    }
+    
+    .dark-mode .status-modal-content::-webkit-scrollbar-thumb:hover {
+      background: #a8a29e;
+    }
+  </style>
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="bg-gradient-to-r from-gray-500 to-gray-600 text-white shadow-lg dark-header">
+    <div class="container mx-auto px-4 py-5 flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <div class="bg-white/20 p-3 rounded-full pulse road-icon">
+          <i class="fas fa-road text-2xl"></i>
+        </div>
+        <div class="slide-in">
+          <h1 class="text-2xl font-bold">Roads & Transport Department</h1>
+          <p class="text-amber-100 text-sm">Smart Complaints Dashboard</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4">
+        <div class="hidden md:flex items-center space-x-4">
+          <div class="text-right">
+            <p id="currentDateTime" class="text-sm font-medium"></p>
+            <p class="text-amber-100 text-xs">Last updated: <span id="lastUpdated">Just now</span></p>
+          </div>
+        </div>
+        
+        <!-- Dark Mode Toggle -->
+        <button id="darkModeToggle" class="bg-white/20 p-2 rounded-full hover:bg-white/30 transition-colors tooltip" data-tooltip="Toggle Dark Mode">
+          <i class="fas fa-moon text-white"></i>
+        </button>
+        
+        <!-- Notifications -->
+        <div class="relative">
+          <button id="notificationBtn" class="bg-white/20 p-2 rounded-full hover:bg-white/30 transition-colors tooltip" data-tooltip="Notifications">
+            <i class="fas fa-bell text-white"></i>
+            <span id="notificationCount" class="notification-badge hidden">0</span>
+          </button>
+        </div>
+        
+        <!-- User Profile -->
+        <div class="relative">
+          <button id="userMenuBtn" class="flex items-center space-x-2 bg-white/20 p-2 rounded-lg hover:bg-white/30 transition-colors">
+            <div class="h-8 w-8 bg-white/20 rounded-full flex items-center justify-center">
+              <i class="fas fa-user"></i>
+            </div>
+            <span class="hidden md:block">Operator</span>
+            <i class="fas fa-chevron-down text-xs"></i>
+          </button>
+          
+          <!-- User Dropdown Menu -->
+          <div id="userMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-10 hidden dark-card">
+            <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">
+              <i class="fas fa-user mr-2"></i>Profile
+            </a>
+            <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">
+              <i class="fas fa-cog mr-2"></i>Settings
+            </a>
+            <div class="border-t border-gray-200 dark:border-gray-600 my-2"></div>
+            <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">
+              <i class="fas fa-sign-out-alt mr-2"></i>Logout
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <div class="container mx-auto px-4 py-6">
+    <!-- Stats Overview with Progress Bars -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-xl shadow-md p-4 card-hover dark-card dashboard-card">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <p class="text-gray-500 text-sm dark:text-gray-900">Total Complaints</p>
+            <p id="totalComplaints" class="text-2xl font-bold text-gray-800 dark:text-white">-</p>
+          </div>
+          <div class="bg-amber-100 p-3 rounded-full dark:bg-amber-900/30">
+            <i class="fas fa-list text-amber-600 text-xl dark:text-amber-400"></i>
+          </div>
+        </div>
+        <div class="progress-bar">
+          <div id="totalProgress" class="progress-fill solved" style="width: 100%"></div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-xl shadow-md p-4 card-hover dark-card dashboard-card">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <p class="text-gray-500 text-sm dark:text-gray-900">Pending</p>
+            <p id="pendingCount" class="text-2xl font-bold text-red-600 dark:text-red-400">-</p>
+          </div>
+          <div class="bg-red-100 p-3 rounded-full dark:bg-red-900/30">
+            <i class="fas fa-clock text-red-600 text-xl dark:text-red-400"></i>
+          </div>
+        </div>
+        <div class="progress-bar">
+          <div id="pendingProgress" class="progress-fill pending" style="width: 0%"></div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-xl shadow-md p-4 card-hover dark-card dashboard-card">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <p class="text-gray-500 text-sm dark:text-gray-900">In Progress</p>
+            <p id="progressCount" class="text-2xl font-bold text-orange-600 dark:text-orange-400">-</p>
+          </div>
+          <div class="bg-orange-100 p-3 rounded-full dark:bg-orange-900/30">
+            <i class="fas fa-tasks text-orange-600 text-xl dark:text-orange-400"></i>
+          </div>
+        </div>
+        <div class="progress-bar">
+          <div id="progressProgress" class="progress-fill progress" style="width: 0%"></div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-xl shadow-md p-4 card-hover dark-card dashboard-card">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <p class="text-gray-500 text-sm dark:text-gray-900">Solved</p>
+            <p id="solvedCount" class="text-2xl font-bold text-green-600 dark:text-green-400">-</p>
+          </div>
+          <div class="bg-green-100 p-3 rounded-full dark:bg-green-900/30">
+            <i class="fas fa-check-circle text-green-600 text-xl dark:text-green-400"></i>
+          </div>
+        </div>
+        <div class="progress-bar">
+          <div id="solvedProgress" class="progress-fill solved" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="bg-white rounded-xl shadow-md p-4 mb-6 dark-card dashboard-card">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Quick Actions</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="quick-action-btn" onclick="filterComplaints('all')">
+          <i class="fas fa-list text-amber-600 dark:text-amber-400"></i>
+          <span class="text-sm font-medium dark:text-gray-200">All Complaints</span>
+        </div>
+        <div class="quick-action-btn" onclick="filterComplaints('pending')">
+          <i class="fas fa-clock text-red-600 dark:text-red-400"></i>
+          <span class="text-sm font-medium dark:text-gray-200">Pending</span>
+        </div>
+        <div class="quick-action-btn" onclick="filterComplaints('progress')">
+          <i class="fas fa-tasks text-orange-600 dark:text-orange-400"></i>
+          <span class="text-sm font-medium dark:text-gray-200">In Progress</span>
+        </div>
+        <div class="quick-action-btn" onclick="exportComplaints()">
+          <i class="fas fa-download text-blue-600 dark:text-blue-400"></i>
+          <span class="text-sm font-medium dark:text-gray-200">Export Data</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Filters, Search and Chart -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <!-- Filters and Search -->
+      <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-4 dark-card dashboard-card">
+        <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+          <div class="flex flex-wrap gap-2">
+            <button id="filterAll" class="tab-button active">All</button>
+            <button id="filterPending" class="tab-button">Pending</button>
+            <button id="filterProgress" class="tab-button">In Progress</button>
+            <button id="filterSolved" class="tab-button">Solved</button>
+            <button id="filterUrgent" class="tab-button urgent-tag">Urgent</button>
+          </div>
+          
+          <div class="flex gap-2 w-full md:w-auto">
+            <div class="relative w-full md:w-64">
+              <input type="text" id="searchInput" placeholder="Search complaints..." 
+                     class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent dark-input">
+              <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+            </div>
+            <button id="clearSearch" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors hidden dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
+              Clear
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Status Chart -->
+      <div class="bg-white rounded-xl shadow-md p-4 dark-card dashboard-card">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Status Overview</h3>
+          <button id="refreshChart" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors tooltip" data-tooltip="Refresh Chart">
+            <i class="fas fa-refresh text-gray-500 dark:text-gray-400"></i>
+          </button>
+        </div>
+        <div class="chart-container">
+          <canvas id="statusChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Complaints Table -->
+    <div id="complaintsContainer" class="bg-white rounded-xl shadow-md overflow-hidden fade-in dark-card">
+      <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Road & Transport Complaints</h2>
+        <div class="flex gap-2">
+          <button id="exportBtn" class="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg font-medium hover:bg-blue-200 transition-colors dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50">
+            <i class="fas fa-download mr-2"></i>Export
+          </button>
+          <button id="refreshBtn" class="px-4 py-2 bg-amber-100 text-amber-600 rounded-lg font-medium hover:bg-amber-200 transition-colors dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50">
+            <i class="fas fa-refresh mr-2"></i>Refresh
+          </button>
+        </div>
+      </div>
+      <div id="complaintsTable" class="p-4">
+        <div class="flex justify-center items-center h-40">
+          <div class="text-center">
+            <div class="loading-spinner mb-4"></div>
+            <p class="text-gray-600 dark:text-gray-400">Loading complaints...</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Pagination -->
+      <div id="pagination" class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center hidden">
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+          Showing <span id="startIndex">1</span> to <span id="endIndex">10</span> of <span id="totalCount">0</span> complaints
+        </div>
+        <div class="flex space-x-2">
+          <button id="prevPage" class="px-3 py-1 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <button id="nextPage" class="px-3 py-1 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Action Button -->
+  <div class="floating-btn bounce-in" id="floatingBtn">
+    <i class="fas fa-road text-white text-xl"></i>
+  </div>
+  
+  <!-- Floating Menu -->
+  <div class="floating-menu" id="floatingMenu">
+    <div class="floating-menu-item" onclick="filterComplaints('all')">
+      <i class="fas fa-list text-amber-600"></i>
+      <span>All Complaints</span>
+    </div>
+    <div class="floating-menu-item" onclick="filterComplaints('pending')">
+      <i class="fas fa-clock text-red-600"></i>
+      <span>Pending</span>
+    </div>
+    <div class="floating-menu-item" onclick="filterComplaints('progress')">
+      <i class="fas fa-tasks text-orange-600"></i>
+      <span>In Progress</span>
+    </div>
+    <div class="floating-menu-item" onclick="exportComplaints()">
+      <i class="fas fa-download text-blue-600"></i>
+      <span>Export Data</span>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <!-- Media Modal -->
+  <div id="mediaModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl max-w-4xl w-full p-6 relative dark-card">
+      <button id="closeModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-10 dark:text-gray-400 dark:hover:text-gray-200">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+      <h3 class="text-xl font-bold mb-4 dark:text-white">Media Preview</h3>
+      <div id="modalContent" class="flex justify-center max-h-[70vh] overflow-auto">
+        <!-- Media will be inserted here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Update Modal - Now with scrollable content -->
+  <div id="statusModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 relative dark-card max-h-[90vh] overflow-hidden">
+      <button id="closeStatusModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 z-10">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+      <h3 class="text-xl font-bold mb-4 dark:text-white">Update Complaint Status</h3>
+      <div class="status-modal-content">
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-medium mb-2 dark:text-gray-300">Select Status</label>
+          <select id="statusSelect" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 dark-input">
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Solved">Solved</option>
+          </select>
+        </div>
+        
+        <!-- New Resolver Name Field -->
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-medium mb-2 dark:text-gray-300">Resolver Name</label>
+          <input type="text" id="resolverName" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 dark-input" placeholder="Enter resolver name...">
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-medium mb-2 dark:text-gray-300">Resolution Notes</label>
+          <textarea id="resolutionNotes" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 dark-input" rows="3" placeholder="Add any notes about the resolution..."></textarea>
+        </div>
+        
+        <!-- Photo Proof Upload Section -->
+        <div id="photoProofSection" class="mb-4 hidden">
+          <label class="block text-gray-700 text-sm font-medium mb-2 dark:text-gray-300">
+            <i class="fas fa-camera mr-2"></i>Upload Photo Proof
+          </label>
+          <div id="fileUploadArea" class="file-upload-area">
+            <div class="upload-icon">
+              <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Click to upload or drag and drop</p>
+            <p class="text-xs text-gray-500 dark:text-gray-500">PNG, JPG, JPEG (Max. 5MB)</p>
+            <input type="file" id="photoProof" accept="image/*" class="hidden">
+            <img id="photoPreview" class="photo-preview" alt="Photo preview">
+          </div>
+          <div id="uploadProgress" class="mt-2 hidden">
+            <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+              <span>Uploading...</span>
+              <span id="uploadPercent">0%</span>
+            </div>
+            <div class="progress-bar">
+              <div id="uploadProgressBar" class="progress-fill progress" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+        <button id="cancelStatusUpdate" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">Cancel</button>
+        <button id="confirmStatusUpdate" class="px-4 py-2 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 transition-colors">Update Status</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Complaint Details Modal -->
+  <div id="detailsModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto dark-card">
+      <button id="closeDetailsModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+      <h3 class="text-xl font-bold mb-4 dark:text-white">Complaint Details</h3>
+      <div id="detailsContent">
+        <!-- Details will be inserted here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="notificationToast" class="fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 hidden fade-in">
+    <div class="flex items-center">
+      <i id="toastIcon" class="fas fa-info-circle mr-2"></i>
+      <span id="toastMessage">Notification message</span>
+    </div>
+  </div>
+
+  <script>
+    // Supabase initialization
+    const SUPABASE_URL = "https://vbxvxqxzdhloklxrcgvb.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZieHZ4cXh6ZGhsb2tseHJjZ3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MTI4NDcsImV4cCI6MjA5MDI4ODg0N30.arjQZaDWHBt3E8IffvaRE07pWbCC6-RSvLHK2uLmHsU";
+    const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Sample data for demonstration - UPDATED to match schema
+    const sampleComplaints = [
+      {
+        id: "42705221-M6c-417a-b1b9-10f010c3ac8",
+        name: "John Doe",
+        phone: "6464921234",
+        details: "Large pothole causing traffic congestion and vehicle damage",
+        status: "Pending",
+        priority: "High",
+        type: "Pothole",
+        created_at: "2025-08-22T11:13:00Z",
+        photo: "https://images.unsplash.com/photo-1542223616-740d5dff7f56?w=400",
+        video: null,
+        department: "Roads",
+        location: "Main Street, Downtown Area, Ward 5, City Center, Hyderabad, Telangana, 500001, India"
+      },
+      {
+        id: "cd37-42f0-b2fc-5c26e232755",
+        name: "Jane Smith",
+        phone: "9876543210",
+        details: "Malfunctioning traffic light causing accidents",
+        status: "In Progress",
+        priority: "High",
+        type: "Traffic Light",
+        created_at: "2025-09-26T22:31:00Z",
+        photo: "https://images.unsplash.com/photo-1612240498936-65f5101365d2?w=400",
+        video: null,
+        department: "Roads",
+        location: "Highway Road, Nandaru, Kalaburegi taulku, 691 Karnataka, 585106, India"
+      },
+      {
+        id: "333cklfc7-b606-f7c9-b2dc-965b1b8d-6a1",
+        name: "Robert Johnson",
+        phone: "9123456789",
+        details: "Missing road sign at dangerous intersection",
+        status: "Solved",
+        priority: "Medium",
+        type: "Road Sign",
+        created_at: "2025-09-16T19:14:00Z",
+        photo: "https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=400",
+        video: null,
+        department: "Roads",
+        location: "Ward 45, Shivaji Nagar, Pune, Maharashtra, 411005, India",
+        resolved_by: "Rajesh Kumar",
+        resolved_description: "New road sign installed and properly positioned",
+        resolved_proof: "https://images.unsplash.com/photo-1542223616-740d5dff7f56?w=400"
+      }
+    ];
+
+    let allComplaints = [];
+    let currentFilter = 'all';
+    let currentComplaintId = null;
+    let filteredComplaints = [];
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let statusChart = null;
+
+    // Check for dark mode preference
+    function checkDarkModePreference() {
+      if (localStorage.getItem('darkMode') === 'true' || 
+          (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.body.classList.add('dark-mode');
+        document.getElementById('darkModeToggle').innerHTML = '<i class="fas fa-sun text-white"></i>';
+      }
+    }
+
+    // Update date and time
+    function updateDateTime() {
+      const now = new Date();
+      const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      };
+      document.getElementById('currentDateTime').textContent = now.toLocaleDateString('en-US', options);
+      document.getElementById('lastUpdated').textContent = 'Just now';
+    }
+    
+    // Initialize date time and update every minute
+    updateDateTime();
+    setInterval(updateDateTime, 60000);
+
+    // Load complaints from Supabase
+    async function loadDeptComplaints() {
+      try {
+        showLoadingState();
+        
+        // Fetch complaints from Supabase
+        const { data, error } = await db
+          .from('complaints')
+          .select('*')
+          .eq('department', 'Roads & Infrastructure')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error("Error fetching complaints:", error);
+          // Fallback to sample data if Supabase fails
+          allComplaints = sampleComplaints;
+          showNotification("Using sample data. Supabase connection failed.", "error");
+        } else {
+          allComplaints = data || [];
+        }
+        
+        updateStats(allComplaints);
+        updateChart();
+        filterComplaints(currentFilter);
+        updateNotificationCount();
+      } catch (error) {
+        console.error("Error loading complaints:", error);
+        showErrorState("Error loading data. Please try again.");
+      }
+    }
+
+    // Show loading state
+    function showLoadingState() {
+      document.getElementById("complaintsTable").innerHTML = `
+        <div class="flex justify-center items-center h-40">
+          <div class="text-center">
+            <div class="loading-spinner mb-4"></div>
+            <p class="text-gray-600 dark:text-gray-400">Loading complaints...</p>
+          </div>
+        </div>`;
+    }
+
+    // Show error state
+    function showErrorState(message) {
+      document.getElementById("complaintsTable").innerHTML = `
+        <div class="flex justify-center items-center h-40">
+          <div class="text-center text-red-600 dark:text-red-400">
+            <i class="fas fa-exclamation-triangle text-3xl mb-2"></i>
+            <p>${message}</p>
+            <button onclick="loadDeptComplaints()" class="mt-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50">
+              Retry
+            </button>
+          </div>
+        </div>`;
+    }
+
+    // Update complaint status in Supabase - FIXED: Use 'resolved_description' instead of 'resolution_description'
+    async function updateStatus(id, newStatus, resolverName = "", resolutionNotes = "", photoProofUrl = "") {
+      try {
+        // Prepare update data
+        const updateData = {
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        };
+
+        // Add resolver name if provided
+        if (resolverName) {
+          updateData.resolved_by = resolverName;
+        }
+
+        // Add resolution notes if provided - FIXED: Use 'resolved_description' instead of 'resolution_description'
+        if (resolutionNotes) {
+          updateData.resolved_description = resolutionNotes;
+        }
+
+        // Add resolution photo if provided
+        if (photoProofUrl) {
+          updateData.resolved_proof = photoProofUrl;
+        }
+
+        // Update complaint in Supabase
+        const { data, error } = await db
+          .from('complaints')
+          .update(updateData)
+          .eq('id', id);
+
+        if (error) {
+          throw error;
+        }
+
+        // Update local data for immediate UI update
+        const complaintIndex = allComplaints.findIndex(c => c.id === id);
+        if (complaintIndex !== -1) {
+          allComplaints[complaintIndex] = { ...allComplaints[complaintIndex], ...updateData };
+        }
+
+        showNotification("Status updated successfully!", "success");
+        loadDeptComplaints(); // refresh table
+      } catch (error) {
+        console.error("Error updating status:", error);
+        showNotification("Error updating status: " + error.message, "error");
+      }
+    }
+
+    // Upload photo proof to Supabase Storage
+    async function uploadPhotoProof(file, complaintId) {
+      try {
+        // Show upload progress
+        document.getElementById('uploadProgress').classList.remove('hidden');
+        
+        // Generate unique file name
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${complaintId}_${Date.now()}.${fileExt}`;
+        const filePath = `complaint-proofs/${fileName}`;
+
+        // Upload file to Supabase Storage
+        const { data, error } = await db.storage
+          .from('complaint-media')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        // Get public URL
+        const { data: { publicUrl } } = db.storage
+          .from('complaint-media')
+          .getPublicUrl(filePath);
+
+        document.getElementById('uploadProgress').classList.add('hidden');
+        showNotification("Photo proof uploaded successfully", "success");
+        return publicUrl;
+        
+      } catch (error) {
+        console.error("Error uploading photo:", error);
+        showNotification("Error uploading photo: " + error.message, "error");
+        document.getElementById('uploadProgress').classList.add('hidden');
+        return null;
+      }
+    }
+
+    // Show notification
+    function showNotification(message, type) {
+      const toast = document.getElementById('notificationToast');
+      const toastIcon = document.getElementById('toastIcon');
+      const toastMessage = document.getElementById('toastMessage');
+      
+      toast.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 fade-in ${
+        type === 'error' ? 'bg-red-100 text-red-700 border-l-4 border-red-500 dark:bg-red-900/30 dark:text-red-400 dark:border-red-600' : 
+        'bg-green-100 text-green-700 border-l-4 border-green-500 dark:bg-green-900/30 dark:text-green-400 dark:border-green-600'
+      }`;
+      
+      toastIcon.className = `fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'} mr-2`;
+      toastMessage.textContent = message;
+      
+      toast.classList.remove('hidden');
+      
+      // Auto remove after 3 seconds
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 3000);
+    }
+
+    // Get color class for status
+    function getStatusClass(status) {
+      if (status === "Pending") return "pending";
+      if (status === "In Progress") return "progress";
+      if (status === "Solved") return "solved";
+      return "";
+    }
+
+    // Get priority class
+    function getPriorityClass(priority) {
+      if (priority === "High") return "priority-high";
+      if (priority === "Medium") return "priority-medium";
+      if (priority === "Low") return "priority-low";
+      return "";
+    }
+
+    // Get complaint type class
+    function getComplaintTypeClass(type) {
+      if (type === "Pothole") return "pothole";
+      if (type === "Traffic Light") return "traffic-light";
+      if (type === "Road Sign") return "road-sign";
+      return "";
+    }
+
+    // Update statistics
+    function updateStats(complaints) {
+      const total = complaints.length;
+      const pending = complaints.filter(c => c.status === "Pending").length;
+      const progress = complaints.filter(c => c.status === "In Progress").length;
+      const solved = complaints.filter(c => c.status === "Solved").length;
+      
+      document.getElementById('totalComplaints').textContent = total;
+      document.getElementById('pendingCount').textContent = pending;
+      document.getElementById('progressCount').textContent = progress;
+      document.getElementById('solvedCount').textContent = solved;
+      
+      // Update progress bars
+      if (total > 0) {
+        document.getElementById('pendingProgress').style.width = `${(pending / total) * 100}%`;
+        document.getElementById('progressProgress').style.width = `${(progress / total) * 100}%`;
+        document.getElementById('solvedProgress').style.width = `${(solved / total) * 100}%`;
+      } else {
+        document.getElementById('pendingProgress').style.width = '0%';
+        document.getElementById('progressProgress').style.width = '0%';
+        document.getElementById('solvedProgress').style.width = '0%';
+      }
+    }
+
+    // Update chart
+    function updateChart() {
+      const ctx = document.getElementById('statusChart').getContext('2d');
+      
+      // Destroy existing chart if it exists
+      if (statusChart) {
+        statusChart.destroy();
+      }
+      
+      const pending = allComplaints.filter(c => c.status === "Pending").length;
+      const progress = allComplaints.filter(c => c.status === "In Progress").length;
+      const solved = allComplaints.filter(c => c.status === "Solved").length;
+      
+      statusChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Pending', 'In Progress', 'Solved'],
+          datasets: [{
+            data: [pending, progress, solved],
+            backgroundColor: [
+              '#dc2626',
+              '#ea580c',
+              '#059669'
+            ],
+            borderWidth: 2,
+            borderColor: document.body.classList.contains('dark-mode') ? '#292524' : '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: document.body.classList.contains('dark-mode') ? '#f8fafc' : '#1c1917',
+                font: {
+                  size: 12
+                }
+              }
+            }
+          },
+          cutout: '70%'
+        }
+      });
+    }
+
+    // Update notification count
+    function updateNotificationCount() {
+      const pendingCount = allComplaints.filter(c => c.status === "Pending").length;
+      const urgentCount = allComplaints.filter(c => c.priority === "High").length;
+      const notificationBadge = document.getElementById('notificationCount');
+      
+      if (pendingCount > 0 || urgentCount > 0) {
+        const count = pendingCount + urgentCount;
+        notificationBadge.textContent = count > 99 ? '99+' : count;
+        notificationBadge.classList.remove('hidden');
+      } else {
+        notificationBadge.classList.add('hidden');
+      }
+    }
+
+    // Toggle photo proof section based on status
+    function togglePhotoProofSection() {
+      const statusSelect = document.getElementById('statusSelect');
+      const photoProofSection = document.getElementById('photoProofSection');
+      
+      if (statusSelect.value === 'In Progress' || statusSelect.value === 'Solved') {
+        photoProofSection.classList.remove('hidden');
+      } else {
+        photoProofSection.classList.add('hidden');
+        // Reset file input when hiding
+        document.getElementById('photoProof').value = '';
+        document.getElementById('photoPreview').style.display = 'none';
+        document.getElementById('photoPreview').src = '';
+      }
+    }
+
+    // Render complaints table with pagination
+    function renderTable(rows) {
+      const totalItems = rows.length;
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      
+      // Update pagination info
+      document.getElementById('totalCount').textContent = totalItems;
+      document.getElementById('startIndex').textContent = ((currentPage - 1) * itemsPerPage) + 1;
+      document.getElementById('endIndex').textContent = Math.min(currentPage * itemsPerPage, totalItems);
+      
+      // Show/hide pagination
+      const pagination = document.getElementById('pagination');
+      if (totalPages > 1) {
+        pagination.classList.remove('hidden');
+      } else {
+        pagination.classList.add('hidden');
+      }
+      
+      // Enable/disable pagination buttons
+      document.getElementById('prevPage').disabled = currentPage === 1;
+      document.getElementById('nextPage').disabled = currentPage === totalPages;
+      
+      // Get current page items
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+      const currentItems = rows.slice(startIndex, endIndex);
+      
+      if (!currentItems.length) {
+        document.getElementById("complaintsTable").innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-road"></i>
+            <p class="text-gray-500 dark:text-gray-400">No road complaints found.</p>
+            <p class="text-sm mt-1 dark:text-gray-500">Try changing your filters or search terms.</p>
+          </div>`;
+        return;
+      }
+
+      let html = `<div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-800">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">ID</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Complaint Details</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Type</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Priority</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Contact</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Status</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Media</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Location</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">`;
+          
+      currentItems.forEach(r => {
+        const date = new Date(r.created_at).toLocaleDateString();
+        const time = new Date(r.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const priority = r.priority || "Medium";
+        const complaintType = r.type || "General";
+        
+        html += `<tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${r.priority === 'High' ? 'urgent-tag' : ''}">
+          <td class="px-4 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900 dark:text-white">${r.id}</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">${date}</div>
+            <div class="text-xs text-gray-400 dark:text-gray-500">${time}</div>
+          </td>
+          <td class="px-4 py-4">
+            <div class="text-sm font-medium text-gray-900 dark:text-white cursor-pointer hover:text-amber-600 dark:hover:text-amber-400" onclick="showComplaintDetails('${r.id}')">${r.name || "Not provided"}</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">${r.details || "No description provided"}</div>
+          </td>
+          <td class="px-4 py-4 whitespace-nowrap">
+            <span class="text-sm px-2 py-1 rounded ${getComplaintTypeClass(complaintType)}">${complaintType}</span>
+          </td>
+          <td class="px-4 py-4 whitespace-nowrap">
+            <span class="text-sm ${getPriorityClass(priority)}">${priority}</span>
+          </td>
+          <td class="px-4 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900 dark:text-white"><a href="tel:${r.phone}" class="text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300">${r.phone || "Not provided"}</a></div>
+          </td>
+          <td class="px-4 py-4 whitespace-nowrap">
+            <span class="status-badge ${getStatusClass(r.status)}">${r.status || "Pending"}</span>
+          </td>
+          <td class="px-4 py-4">
+            <div class="flex space-x-2">
+              ${r.photo ? `<div class="relative">
+                <img src="${r.photo}" alt="Complaint photo" class="media-preview w-16 h-16 object-cover rounded-lg border dark:border-gray-600" onclick="openMediaModal('${r.photo}', 'image')">
+                <span class="absolute top-0 right-0 bg-black bg-opacity-50 text-white text-xs px-1 rounded">Photo</span>
+              </div>` : ""}
+              ${r.video ? `<div class="relative">
+                <div class="media-preview w-16 h-16 rounded-lg border overflow-hidden bg-gray-100 dark:bg-gray-700 dark:border-gray-600 flex items-center justify-center" onclick="openMediaModal('${r.video}', 'video')">
+                  <i class="fas fa-play text-gray-500 dark:text-gray-400 text-xl"></i>
+                </div>
+                <span class="absolute top-0 right-0 bg-black bg-opacity-50 text-white text-xs px-1 rounded">Video</span>
+              </div>` : ""}
+              ${r.resolved_proof ? `<div class="relative">
+                <img src="${r.resolved_proof}" alt="Resolution photo" class="media-preview w-16 h-16 object-cover rounded-lg border dark:border-gray-600" onclick="openMediaModal('${r.resolved_proof}', 'image')">
+                <span class="absolute top-0 right-0 bg-green-500 text-white text-xs px-1 rounded">Resolved</span>
+              </div>` : ""}
+              ${!r.photo && !r.video && !r.resolved_proof ? "<span class='text-gray-400 text-sm dark:text-gray-500'>No media</span>" : ""}
+            </div>
+          </td>
+          <td class="px-4 py-4">
+            <div class="text-sm text-gray-900 dark:text-white max-w-xs truncate">${r.location || "Not specified"}</div>
+          </td>
+          <td class="px-4 py-4 whitespace-nowrap">
+            <button class="px-3 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors tooltip" data-tooltip="Update Status" onclick="openStatusModal('${r.id}')">
+              <i class="fas fa-edit"></i>
+            </button>
+          </td>
+        </tr>`;
+      });
+      
+      html += `</tbody></table></div>`;
+      document.getElementById("complaintsTable").innerHTML = html;
+    }
+
+    // Show complaint details - FIXED: Use 'resolved_description' instead of 'resolution_description'
+    function showComplaintDetails(id) {
+      const complaint = allComplaints.find(c => c.id == id);
+      if (!complaint) return;
+      
+      const content = document.getElementById('detailsContent');
+      const date = new Date(complaint.created_at).toLocaleDateString();
+      const time = new Date(complaint.created_at).toLocaleTimeString();
+      
+      content.innerHTML = `
+        <div class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 class="font-semibold text-gray-700 dark:text-gray-300">Complaint ID</h4>
+              <p class="text-gray-900 dark:text-white">${complaint.id}</p>
+            </div>
+            <div>
+              <h4 class="font-semibold text-gray-700 dark:text-gray-300">Submitted On</h4>
+              <p class="text-gray-900 dark:text-white">${date} at ${time}</p>
+            </div>
+            <div>
+              <h4 class="font-semibold text-gray-700 dark:text-gray-300">Complainant Name</h4>
+              <p class="text-gray-900 dark:text-white">${complaint.name || "Not provided"}</p>
+            </div>
+            <div>
+              <h4 class="font-semibold text-gray-700 dark:text-gray-300">Phone Number</h4>
+              <p class="text-gray-900 dark:text-white">${complaint.phone || "Not provided"}</p>
+            </div>
+            <div>
+              <h4 class="font-semibold text-gray-700 dark:text-gray-300">Priority</h4>
+              <p class="text-gray-900 dark:text-white ${getPriorityClass(complaint.priority)}">${complaint.priority || "Medium"}</p>
+            </div>
+            <div>
+              <h4 class="font-semibold text-gray-700 dark:text-gray-300">Status</h4>
+              <span class="status-badge ${getStatusClass(complaint.status)}">${complaint.status || "Pending"}</span>
+            </div>
+            ${complaint.resolved_by ? `
+            <div>
+              <h4 class="font-semibold text-gray-700 dark:text-gray-300">Resolver Name</h4>
+              <p class="text-gray-900 dark:text-white">${complaint.resolved_by}</p>
+            </div>
+            ` : ''}
+          </div>
+          <div>
+            <h4 class="font-semibold text-gray-700 dark:text-gray-300">Location</h4>
+            <p class="text-gray-900 dark:text-white">${complaint.location || "Not specified"}</p>
+          </div>
+          <div>
+            <h4 class="font-semibold text-gray-700 dark:text-gray-300">Complaint Details</h4>
+            <p class="text-gray-900 dark:text-white whitespace-pre-wrap">${complaint.details || "No description provided"}</p>
+          </div>
+          ${complaint.resolved_description ? `
+          <div>
+            <h4 class="font-semibold text-gray-700 dark:text-gray-300">Resolution Notes</h4>
+            <p class="text-gray-900 dark:text-white whitespace-pre-wrap">${complaint.resolved_description}</p>
+          </div>
+          ` : ''}
+          ${complaint.resolved_proof ? `
+          <div>
+            <h4 class="font-semibold text-gray-700 dark:text-gray-300">Resolution Photo</h4>
+            <img src="${complaint.resolved_proof}" alt="Resolution photo" class="mt-2 rounded-lg max-w-md cursor-pointer" onclick="openMediaModal('${complaint.resolved_proof}', 'image')">
+          </div>
+          ` : ''}
+        </div>
+      `;
+      
+      document.getElementById('detailsModal').classList.remove('hidden');
+    }
+
+    // Open media modal
+    function openMediaModal(src, type) {
+      const modal = document.getElementById('mediaModal');
+      const content = document.getElementById('modalContent');
+      
+      if (type === 'image') {
+        content.innerHTML = `<img src="${src}" class="max-h-full rounded-lg" alt="Complaint photo">`;
+      } else if (type === 'video') {
+        content.innerHTML = `<video controls class="max-h-full rounded-lg">
+          <source src="${src}" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>`;
+      }
+      
+      modal.classList.remove('hidden');
+    }
+
+    // Close media modal
+    function closeMediaModal() {
+      document.getElementById('mediaModal').classList.add('hidden');
+    }
+
+    // Open status update modal - FIXED: Use 'resolved_description' instead of 'resolution_description'
+    function openStatusModal(id) {
+      currentComplaintId = id;
+      const complaint = allComplaints.find(c => c.id == id);
+      if (complaint) {
+        document.getElementById('statusSelect').value = complaint.status || "Pending";
+        document.getElementById('resolverName').value = complaint.resolved_by || "";
+        document.getElementById('resolutionNotes').value = complaint.resolved_description || "";
+        
+        // Toggle photo proof section based on initial status
+        togglePhotoProofSection();
+        
+        // Show existing resolution photo if available
+        if (complaint.resolved_proof) {
+          document.getElementById('photoPreview').src = complaint.resolved_proof;
+          document.getElementById('photoPreview').style.display = 'block';
+        }
+      }
+      document.getElementById('statusModal').classList.remove('hidden');
+    }
+
+    // Close status update modal
+    function closeStatusModal() {
+      document.getElementById('statusModal').classList.add('hidden');
+      currentComplaintId = null;
+      
+      // Reset file input
+      document.getElementById('photoProof').value = '';
+      document.getElementById('photoPreview').style.display = 'none';
+      document.getElementById('photoPreview').src = '';
+      document.getElementById('uploadProgress').classList.add('hidden');
+    }
+
+    // Close details modal
+    function closeDetailsModal() {
+      document.getElementById('detailsModal').classList.add('hidden');
+    }
+
+    // Filter complaints
+    function filterComplaints(filter) {
+      currentFilter = filter;
+      currentPage = 1; // Reset to first page when filter changes
+      
+      // Update button states
+      document.getElementById('filterAll').className = 
+        filter === 'all' ? 'tab-button active' : 'tab-button';
+      
+      document.getElementById('filterPending').className = 
+        filter === 'pending' ? 'tab-button active' : 'tab-button';
+      
+      document.getElementById('filterProgress').className = 
+        filter === 'progress' ? 'tab-button active' : 'tab-button';
+      
+      document.getElementById('filterSolved').className = 
+        filter === 'solved' ? 'tab-button active' : 'tab-button';
+      
+      document.getElementById('filterUrgent').className = 
+        filter === 'urgent' ? 'tab-button active urgent-tag' : 'tab-button';
+      
+      filteredComplaints = allComplaints;
+      
+      if (filter === 'pending') {
+        filteredComplaints = allComplaints.filter(c => c.status === "Pending");
+      } else if (filter === 'progress') {
+        filteredComplaints = allComplaints.filter(c => c.status === "In Progress");
+      } else if (filter === 'solved') {
+        filteredComplaints = allComplaints.filter(c => c.status === "Solved");
+      } else if (filter === 'urgent') {
+        filteredComplaints = allComplaints.filter(c => c.priority === "High");
+      }
+      
+      // Apply search filter if any
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      if (searchTerm) {
+        filteredComplaints = filteredComplaints.filter(c => 
+          (c.name && c.name.toLowerCase().includes(searchTerm)) || 
+          (c.details && c.details.toLowerCase().includes(searchTerm)) ||
+          (c.phone && c.phone.includes(searchTerm)) ||
+          (c.location && c.location.toLowerCase().includes(searchTerm)) ||
+          (c.id && c.id.toString().includes(searchTerm))
+        );
+      }
+      
+      renderTable(filteredComplaints);
+      
+      // Show/hide clear search button
+      const clearSearchBtn = document.getElementById('clearSearch');
+      if (searchTerm) {
+        clearSearchBtn.classList.remove('hidden');
+      } else {
+        clearSearchBtn.classList.add('hidden');
+      }
+    }
+
+    // Export complaints to CSV
+    function exportComplaints() {
+      if (!filteredComplaints.length) {
+        showNotification("No data to export", "error");
+        return;
+      }
+      
+      const headers = ['ID', 'Name', 'Phone', 'Location', 'Details', 'Status', 'Priority', 'Date'];
+      const csvContent = [
+        headers.join(','),
+        ...filteredComplaints.map(row => [
+          row.id,
+          `"${(row.name || '').replace(/"/g, '""')}"`,
+          row.phone || '',
+          `"${(row.location || '').replace(/"/g, '""')}"`,
+          `"${(row.details || '').replace(/"/g, '""')}"`,
+          row.status || 'Pending',
+          row.priority || 'Medium',
+          new Date(row.created_at).toLocaleDateString()
+        ].join(','))
+      ].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `roads_complaints_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showNotification("Complaints exported successfully", "success");
+    }
+
+    // Toggle dark mode
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
+      
+      if (document.body.classList.contains('dark-mode')) {
+        localStorage.setItem('darkMode', 'true');
+        document.getElementById('darkModeToggle').innerHTML = '<i class="fas fa-sun text-white"></i>';
+      } else {
+        localStorage.setItem('darkMode', 'false');
+        document.getElementById('darkModeToggle').innerHTML = '<i class="fas fa-moon text-white"></i>';
+      }
+      
+      // Update chart colors if it exists
+      if (statusChart) {
+        updateChart();
+      }
+    }
+
+    // Toggle floating menu
+    function toggleFloatingMenu() {
+      const menu = document.getElementById('floatingMenu');
+      menu.classList.toggle('active');
+    }
+
+    // Initialize event listeners when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      // Check dark mode preference
+      checkDarkModePreference();
+      
+      // Load complaints
+      loadDeptComplaints();
+      
+      // Setup filter buttons
+      document.getElementById('filterAll').addEventListener('click', () => filterComplaints('all'));
+      document.getElementById('filterPending').addEventListener('click', () => filterComplaints('pending'));
+      document.getElementById('filterProgress').addEventListener('click', () => filterComplaints('progress'));
+      document.getElementById('filterSolved').addEventListener('click', () => filterComplaints('solved'));
+      document.getElementById('filterUrgent').addEventListener('click', () => filterComplaints('urgent'));
+      
+      // Setup search
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        filterComplaints(currentFilter);
+      });
+      
+      // Clear search
+      document.getElementById('clearSearch').addEventListener('click', () => {
+        document.getElementById('searchInput').value = '';
+        filterComplaints(currentFilter);
+      });
+      
+      // Setup refresh button
+      document.getElementById('refreshBtn').addEventListener('click', () => {
+        loadDeptComplaints();
+        showNotification("Refreshing complaints...", "success");
+      });
+      
+      // Setup export button
+      document.getElementById('exportBtn').addEventListener('click', exportComplaints);
+      
+      // Setup modal close buttons
+      document.getElementById('closeModal').addEventListener('click', closeMediaModal);
+      document.getElementById('closeStatusModal').addEventListener('click', closeStatusModal);
+      document.getElementById('closeDetailsModal').addEventListener('click', closeDetailsModal);
+      document.getElementById('cancelStatusUpdate').addEventListener('click', closeStatusModal);
+      
+      // Setup status update confirmation
+      document.getElementById('confirmStatusUpdate').addEventListener('click', async () => {
+        if (currentComplaintId) {
+          const newStatus = document.getElementById('statusSelect').value;
+          const resolverName = document.getElementById('resolverName').value;
+          const resolutionNotes = document.getElementById('resolutionNotes').value;
+          const photoProofFile = document.getElementById('photoProof').files[0];
+          
+          let photoProofUrl = '';
+          
+          // Upload photo proof if file is selected
+          if (photoProofFile) {
+            // Show upload progress
+            document.getElementById('uploadProgress').classList.remove('hidden');
+            
+            // Update progress bar
+            const updateProgress = (progress) => {
+              document.getElementById('uploadPercent').textContent = `${progress}%`;
+              document.getElementById('uploadProgressBar').style.width = `${progress}%`;
+            };
+            
+            // Upload file
+            updateProgress(30);
+            photoProofUrl = await uploadPhotoProof(photoProofFile, currentComplaintId);
+            updateProgress(100);
+          }
+          
+          updateStatus(currentComplaintId, newStatus, resolverName, resolutionNotes, photoProofUrl);
+          closeStatusModal();
+        }
+      });
+
+      // Toggle photo proof section when status changes
+      document.getElementById('statusSelect').addEventListener('change', togglePhotoProofSection);
+
+      // File upload handling
+      const fileUploadArea = document.getElementById('fileUploadArea');
+      const photoProofInput = document.getElementById('photoProof');
+      const photoPreview = document.getElementById('photoPreview');
+
+      // Click on upload area to trigger file input
+      fileUploadArea.addEventListener('click', () => {
+        photoProofInput.click();
+      });
+
+      // Handle file selection
+      photoProofInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          // Validate file type
+          if (!file.type.startsWith('image/')) {
+            showNotification('Please select an image file', 'error');
+            return;
+          }
+          
+          // Validate file size (5MB)
+          if (file.size > 5 * 1024 * 1024) {
+            showNotification('File size must be less than 5MB', 'error');
+            return;
+          }
+          
+          // Show preview
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            photoPreview.src = e.target.result;
+            photoPreview.style.display = 'block';
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // Drag and drop handling
+      fileUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        fileUploadArea.classList.add('dragover');
+      });
+
+      fileUploadArea.addEventListener('dragleave', () => {
+        fileUploadArea.classList.remove('dragover');
+      });
+
+      fileUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        fileUploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          photoProofInput.files = files;
+          photoProofInput.dispatchEvent(new Event('change'));
+        }
+      });
+      
+      // Close modals when clicking outside
+      document.getElementById('mediaModal').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('mediaModal')) {
+          closeMediaModal();
+        }
+      });
+      
+      document.getElementById('statusModal').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('statusModal')) {
+          closeStatusModal();
+        }
+      });
+      
+      document.getElementById('detailsModal').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('detailsModal')) {
+          closeDetailsModal();
+        }
+      });
+      
+      // Close modals with Escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeMediaModal();
+          closeStatusModal();
+          closeDetailsModal();
+        }
+      });
+      
+      // Setup dark mode toggle
+      document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
+      
+      // Setup user menu toggle
+      document.getElementById('userMenuBtn').addEventListener('click', () => {
+        document.getElementById('userMenu').classList.toggle('hidden');
+      });
+      
+      // Close user menu when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#userMenuBtn') && !e.target.closest('#userMenu')) {
+          document.getElementById('userMenu').classList.add('hidden');
+        }
+      });
+      
+      // Setup floating action button
+      document.getElementById('floatingBtn').addEventListener('click', toggleFloatingMenu);
+      
+      // Close floating menu when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#floatingBtn') && !e.target.closest('#floatingMenu')) {
+          document.getElementById('floatingMenu').classList.remove('active');
+        }
+      });
+      
+      // Setup pagination buttons
+      document.getElementById('prevPage').addEventListener('click', () => {
+        if (currentPage > 1) {
+          currentPage--;
+          renderTable(filteredComplaints);
+        }
+      });
+      
+      document.getElementById('nextPage').addEventListener('click', () => {
+        const totalPages = Math.ceil(filteredComplaints.length / itemsPerPage);
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderTable(filteredComplaints);
+        }
+      });
+      
+      // Setup chart refresh button
+      document.getElementById('refreshChart').addEventListener('click', () => {
+        updateChart();
+        showNotification("Chart updated", "success");
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Complaint Management</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex flex-col">
+
+  <!-- Top Bar -->
+  <header class="bg-gradient-to-r from-blue-700 to-blue-800 text-white shadow-lg py-4 px-6 flex items-center justify-between sticky top-0 z-40">
+    <div class="flex items-center">
+      <i class="fas fa-city text-2xl mr-3 animate-pulse"></i>
+      <span class="text-xl font-bold tracking-wide">Smart Complaint Management</span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex flex-col items-center justify-center flex-grow py-8">
+
+    <div class="text-center mb-8 w-full max-w-5xl px-6">
+      <h1 class="text-3xl md:text-4xl font-extrabold text-blue-700 mb-2 tracking-wide drop-shadow-lg animate__animated animate__fadeInDown">
+        Choose Department
+      </h1>
+      <p class="text-gray-600 max-w-2xl mx-auto mb-6">Select the department you want to manage</p>
+    </div>
+
+    <!-- Department Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl px-6">
+      <!-- Water -->
+      <div data-dept="Water" class="department-card cursor-pointer group bg-gradient-to-br from-blue-400 to-blue-600 p-6 md:p-8 rounded-2xl shadow-xl text-center">
+        <i class="fas fa-droplet text-4xl md:text-5xl text-white drop-shadow-md"></i>
+        <h2 class="text-xl md:text-2xl font-bold text-white mb-2">Water Department</h2>
+      </div>
+      <!-- Electricity -->
+      <div data-dept="Electricity" class="department-card cursor-pointer group bg-gradient-to-br from-yellow-400 to-orange-500 p-6 md:p-8 rounded-2xl shadow-xl text-center">
+        <i class="fas fa-plug-circle-bolt text-4xl md:text-5xl text-white drop-shadow-md"></i>
+        <h2 class="text-xl md:text-2xl font-bold text-white mb-2">Electricity Department</h2>
+      </div>
+      <!-- Roads -->
+      <div data-dept="Roads" class="department-card cursor-pointer group bg-gradient-to-br from-green-500 to-green-700 p-6 md:p-8 rounded-2xl shadow-xl text-center">
+        <i class="fas fa-road-circle-check text-4xl md:text-5xl text-white drop-shadow-md "></i>
+        <h2 class="text-xl md:text-2xl font-bold text-white mb-2">Roads Department</h2>
+      </div>
+      <!-- Drainage -->
+      <div data-dept="Drainage" class="department-card cursor-pointer group bg-gradient-to-br from-purple-500 to-indigo-700 p-6 md:p-8 rounded-2xl shadow-xl text-center">
+        <i class="fas fa-person-digging text-4xl md:text-5xl text-white drop-shadow-md"></i>
+        <h2 class="text-xl md:text-2xl font-bold text-white mb-2">Drainage Department</h2>
+      </div>
+      <!-- Others -->
+      <div data-dept="Others" class="department-card cursor-pointer group bg-gradient-to-br from-gray-500 to-gray-700 p-6 md:p-8 rounded-2xl shadow-xl text-center">
+        <i class="fas fa-building text-4xl md:text-5xl text-white drop-shadow-md"></i>
+        <h2 class="text-xl md:text-2xl font-bold text-white mb-2">Other Departments</h2>
+      </div>
+    </div>
+  </main>
+
+  <!-- Login Modal -->
+  <div id="authModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md animate-fadeIn relative">
+      <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors">
+        <i class="fas fa-times-circle text-xl"></i>
+      </button>
+      
+      <div class="text-center mb-6">
+        <i class="fas fa-lock text-3xl text-blue-600 mb-3"></i>
+        <h2 id="modalTitle" class="text-2xl font-bold text-gray-800"></h2>
+        <p class="text-gray-600 text-sm mt-1">Enter your credentials to access the department portal</p>
+      </div>
+      
+      <form id="loginForm" onsubmit="event.preventDefault(); loginAdmin();">
+        <div class="mb-4">
+          <label for="email" class="block text-gray-700 text-sm font-medium mb-1">Email</label>
+          <input id="email" type="email" placeholder="Enter your email" 
+                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+        
+        <div class="mb-6">
+          <label for="password" class="block text-gray-700 text-sm font-medium mb-1">Password</label>
+          <input id="password" type="password" placeholder="Enter your password" 
+                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+        
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg shadow-md transition-all">Login</button>
+      </form>
+      
+      <p id="authMessage" class="mt-4 text-center text-sm rounded-lg p-2 hidden"></p>
+    </div>
+  </div>
+
+<script>
+  const SUPABASE_URL = "https://vbxvxqxzdhloklxrcgvb.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZieHZ4cXh6ZGhsb2tseHJjZ3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MTI4NDcsImV4cCI6MjA5MDI4ODg0N30.arjQZaDWHBt3E8IffvaRE07pWbCC6-RSvLHK2uLmHsU";
+  // #region agent log
+  fetch('http://127.0.0.1:7822/ingest/445b23d4-43c8-4f9f-b539-253cd236b9a6',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6bf453'},body:JSON.stringify({sessionId:'6bf453',runId:'pre-fix',hypothesisId:'H2',location:'index-admin.html:98',message:'admin init constants ready',data:{hasGlobalSupabase:typeof supabase!=='undefined',hasAnonKey:typeof SUPABASE_ANON_KEY==='string'&&SUPABASE_ANON_KEY.length>0,hasSupabaseKeyVar:typeof SUPABASE_KEY!=='undefined'},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  let selectedDepartment = "";
+
+  // Open modal when a department is clicked
+  document.querySelectorAll('.department-card').forEach(card => {
+    card.addEventListener('click', function() {
+      selectedDepartment = this.getAttribute('data-dept');
+      document.getElementById('modalTitle').innerText = `${selectedDepartment} Department Login`;
+      document.getElementById('authModal').classList.remove('hidden');
+      document.getElementById('loginForm').reset();
+      hideMessage();
+    });
+  });
+
+  function closeAuthModal() {
+    document.getElementById('authModal').classList.add('hidden');
+  }
+
+  function showMessage(msg, error = true) {
+    const el = document.getElementById('authMessage');
+    el.innerText = msg;
+    el.className = error
+      ? "mt-4 text-center text-sm rounded-lg p-2 bg-red-100 text-red-600"
+      : "mt-4 text-center text-sm rounded-lg p-2 bg-green-100 text-green-600";
+    el.classList.remove('hidden');
+  }
+
+  function hideMessage() {
+    document.getElementById('authMessage').classList.add('hidden');
+  }
+
+  async function loginAdmin() {
+    // #region agent log
+    fetch('http://127.0.0.1:7822/ingest/445b23d4-43c8-4f9f-b539-253cd236b9a6',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6bf453'},body:JSON.stringify({sessionId:'6bf453',runId:'pre-fix',hypothesisId:'H4',location:'index-admin.html:129',message:'loginAdmin entered',data:{selectedDepartment:selectedDepartment||null},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value.trim();
+
+    if (!email || !password) {
+      showMessage("Please enter both email and password");
+      return;
+    }
+
+    const { data, error } = await supabaseClient
+      .from("department_admins")
+      .select("*")
+      .eq("email", email)
+      .eq("password", password)
+      .single();
+    // #region agent log
+    fetch('http://127.0.0.1:7822/ingest/445b23d4-43c8-4f9f-b539-253cd236b9a6',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6bf453'},body:JSON.stringify({sessionId:'6bf453',runId:'pre-fix',hypothesisId:'H4',location:'index-admin.html:143',message:'department_admins login query completed',data:{hasData:!!data,error:error?{message:error.message,code:error.code,details:error.details,hint:error.hint}:null},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+
+    if (error || !data) {
+      showMessage("Invalid email or password");
+      return;
+    }
+
+    if (data.department_name.toLowerCase() !== selectedDepartment.toLowerCase()) {
+      showMessage(`This account does not belong to ${selectedDepartment} department`);
+      return;
+    }
+
+    showMessage("Login successful!", false);
+
+    await supabaseClient
+      .from("department_admins")
+      .update({ last_login: new Date().toISOString() })
+      .eq("email", email);
+
+    setTimeout(() => {
+      const dept = data.department_name.toLowerCase();
+      if (dept.includes("water")) window.location.href = "admin-water.html"
+      else if (dept.includes("electric")) window.location.href = "admin-electricity.html";
+      else if (dept.includes("road")) window.location.href = "admin-roads.html";
+      else if (dept.includes("drain")) window.location.href = "admin-drainage.html";
+      else window.location.href = "admin-others.html";
+    }, 1000);
+  }
+
+  // Close modal on background click or ESC
+  document.getElementById('authModal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeAuthModal();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === "Escape") closeAuthModal(); });
+</script>
+
+<style>
+  .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+  @keyframes fadeIn { from {opacity:0; transform:scale(0.95);} to {opacity:1; transform:scale(1);} }
+</style>
+
+</body>
+</html>

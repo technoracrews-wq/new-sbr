@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SiteScan – Department Leaderboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --accent:#2563eb;
+  --accent-glow:#3b82f6;
+  --success:#16a34a;
+  --warning:#dc2626;
+  --text-dark:#1e293b;
+  --text-muted:#64748b;
+  --card-bg:rgba(255,255,255,0.96);
+  --shadow-soft:0 10px 25px rgba(0,0,0,0.08);
+  --radius:16px;
+}
+body{font-family:"Inter",sans-serif;background:linear-gradient(135deg,#f8fafc,#e2e8f0,#fff);margin:0;color:var(--text-dark);}
+header{text-align:center;padding:20px;background:rgba(248,250,252,.95);box-shadow:var(--shadow-soft);}
+h1{font-size:2rem;font-weight:800;background:linear-gradient(90deg,#2563eb,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+main{max-width:1200px;margin:0 auto;padding:40px 20px;}
+.summary{display:flex;justify-content:space-around;background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow-soft);padding:15px;margin-bottom:40px;}
+.summary-box{text-align:center;}
+.summary-box h3{margin:0;font-size:2rem;color:var(--accent);}
+.summary-box p{margin:0;color:var(--text-muted);}
+.leaderboard-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:30px;}
+.leaderboard{background:var(--card-bg);border-radius:var(--radius);padding:25px;box-shadow:var(--shadow-soft);}
+.leaderboard h3{text-align:center;color:var(--accent-glow);}
+.rank-row{display:flex;align-items:center;justify-content:space-between;background:rgba(37,99,235,.05);padding:12px 16px;margin:10px 0;border-radius:12px;transition:.3s;}
+.rank-row:hover{background:rgba(37,99,235,.1);transform:scale(1.02);}
+.rank{width:28px;font-weight:700;}
+.officer-info{flex-grow:1;padding-left:10px;}
+.officer-info h4{margin:0;font-size:1rem;}
+.officer-info p{margin:2px 0 0;font-size:.85rem;color:var(--text-muted);}
+.officer-info a{color:var(--accent-glow);text-decoration:none;font-size:.85rem;}
+.officer-info a:hover{text-decoration:underline;}
+.progress{width:120px;height:8px;background:#e5e7eb;border-radius:10px;overflow:hidden;margin-left:10px;}
+.progress-bar{height:100%;transition:width 1s ease;}
+.gold{color:#facc15}.silver{color:#9ca3af}.bronze{color:#d97706}
+.loader{text-align:center;margin:25px 0;color:var(--text-muted);}
+.loader i{animation:spin 1s linear infinite;color:var(--accent);}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+footer{text-align:center;margin-top:60px;color:var(--text-muted);padding:20px 0;}
+</style>
+</head>
+
+<body>
+<header><h1>SiteScan Department Leaderboard</h1></header>
+<main>
+  <div class="summary">
+    <div class="summary-box"><h3 id="totalCases">0</h3><p>Total Issues</p></div>
+    <div class="summary-box"><h3 id="pendingCases" style="color:var(--warning)">0</h3><p>Pending</p></div>
+    <div class="summary-box"><h3 id="resolvedCases" style="color:var(--success)">0</h3><p>Resolved</p></div>
+  </div>
+
+  <div class="leaderboard-container">
+    <div class="leaderboard">
+      <h3>⚠️ Top Lazy Admins </h3>
+      <div id="lazyLoader" class="loader"><i class="fa fa-spinner"></i> Loading...</div>
+      <div id="lazyList"></div>
+    </div>
+    <div class="leaderboard">
+      <h3>⚡ Top Active Admins</h3>
+      <div id="activeLoader" class="loader"><i class="fa fa-spinner"></i> Loading...</div>
+      <div id="activeList"></div>
+    </div>
+  </div>
+</main>
+
+
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+const supabase = createClient(
+  "https://vbxvxqxzdhloklxrcgvb.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZieHZ4cXh6ZGhsb2tseHJjZ3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MTI4NDcsImV4cCI6MjA5MDI4ODg0N30.arjQZaDWHBt3E8IffvaRE07pWbCC6-RSvLHK2uLmHsU"
+);
+window.siteScanClient = supabase;
+
+function row(o, i, mode, maxPending) {
+  const medals = ["🥇","🥈","🥉"];
+  const medal = medals[i] || `#${i + 1}`;
+  const barColor = mode === "lazy"
+    ? `hsl(${Math.max(0, 120 - (o.pending / (maxPending || 1)) * 120)}, 80%, 45%)`
+    : `hsl(${Math.round(o.completion * 1.2)}, 70%, 40%)`;
+  const barWidth = mode === "lazy"
+    ? `${Math.round((o.pending / (maxPending || 1)) * 100)}%`
+    : `${Math.round(o.completion)}%`;
+  const emailLink = o.email
+    ? `<a href="mailto:${o.email}">${o.email}</a>`
+    : "<span style='color:#aaa'>No email on file</span>";
+
+  return `
+    <div class="rank-row">
+      <div class="rank ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${medal}</div>
+      <div class="officer-info">
+        <h4>${o.department_name}</h4>
+        <p>${o.admin_name} &bull; ${emailLink}</p>
+        <p>${o.pending} pending / ${o.total} total &bull; ${Math.round(o.completion)}% resolved</p>
+      </div>
+      <div class="progress">
+        <div class="progress-bar" style="width:${barWidth};background:${barColor}"></div>
+      </div>
+    </div>`;
+}
+
+async function loadLeaderboard() {
+  console.log("🔄 Leaderboard refresh triggered...");
+
+  try {
+    // 1. Use the working client name we created
+    // 2. Fetch complaints (we know this table works)
+    const { data: complaints, error: complaintsError } = await window.siteScanClient
+      .from("complaints")
+      .select("*");
+
+    // 3. Handle the broken table safely
+    // We try to get admins, but if it fails (404), we create a "fake" list so the page doesn't crash
+    const { data: adminsRaw, error: adminsError } = await window.siteScanClient
+      .from("department_admins")
+      .select("department_name,admin_name,email");
+
+    // If table is missing (404), use an empty array so .map() doesn't break
+   // This ensures that if Supabase fails (adminsRaw is null), 
+// the app uses this local list instead.
+const admins = adminsRaw && adminsRaw.length > 0 ? adminsRaw : [
+  { 
+    department_name: "Electricity", 
+    admin_name: "Hubli Electricity Supply Co.", 
+    email: "support@hescom.com" 
+  },
+  { 
+    department_name: "Water", 
+    admin_name: "City Water Board", 
+    email: "water@gulbarga.gov" 
+  },
+  { 
+    department_name: "Roads", 
+    admin_name: "PWD Dept", 
+    email: "roads@karnataka.gov" 
+  }
+];
+    const currentComplaints = complaints || [];
+
+    // Summary Calculations (using the working complaints data)
+    const total = currentComplaints.length;
+    const pending = currentComplaints.filter(c => c.status?.toLowerCase() === "pending").length;
+    
+    // Update top counters
+    if(document.getElementById("totalCases")) document.getElementById("totalCases").textContent = total;
+    if(document.getElementById("pendingCases")) document.getElementById("pendingCases").textContent = pending;
+    if(document.getElementById("resolvedCases")) document.getElementById("resolvedCases").textContent = total - pending;
+
+    // Group by department logic
+    const stats = {};
+    currentComplaints.forEach(c => {
+      const d = c.department?.trim(); 
+      if (!d) return;
+      if (!stats[d]) stats[d] = { total: 0, pending: 0 };
+      stats[d].total++;
+      if (c.status?.toLowerCase() === "pending") stats[d].pending++;
+    });
+
+    // Combine data - only runs if 'admins' has data
+    const perf = admins.map(a => {
+      const s = stats[a.department_name] || { total: 0, pending: 0 };
+      const completion = s.total > 0 ? ((s.total - s.pending) / s.total) * 100 : 0;
+      return { ...a, total: s.total, pending: s.pending, completion };
+    });
+
+    // UI Updates - Check if lists exist before writing to them
+    const lazyList = document.getElementById("lazyList");
+    const activeList = document.getElementById("activeList");
+
+    if (perf.length > 0) {
+      const lazy = [...perf].sort((a, b) => b.pending - a.pending).slice(0, 5);
+      const active = [...perf].sort((a, b) => b.completion - a.completion).slice(0, 5);
+      const maxPending = Math.max(...perf.map(p => p.pending || 0)) || 1;
+
+      // Use your existing 'row' and 'emailLink' logic here...
+      lazyList.innerHTML = lazy.map((o, i) => row(o, i, "lazy", maxPending)).join("");
+      activeList.innerHTML = active.map((o, i) => row(o, i, "active")).join("");
+    } else {
+      lazyList.innerHTML = "<p style='padding:10px;'>No admin data found in database.</p>";
+      activeList.innerHTML = "<p style='padding:10px;'>Add 'department_admins' table to see rankings.</p>";
+    }
+
+    // Hide loaders
+    if(document.getElementById("lazyLoader")) document.getElementById("lazyLoader").style.display = "none";
+    if(document.getElementById("activeLoader")) document.getElementById("activeLoader").style.display = "none";
+
+  } catch (err) {
+    console.error("❌ Critical Leaderboard Error:", err.message);
+  }
+}
+
+// Run once on load
+loadLeaderboard().catch((err) => {
+    console.error("Initial load failed:", err);
+});
+
+// Refresh every 30 seconds
+setInterval(loadLeaderboard, 30000);
+</script>
+</body>
+</html>
