@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roads & Transport Dept | SiteScan Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* Custom styles for better contrast & theme handling */
+    :root {
+      --bg-light: #fef9e8;
+      --card-light: #ffffff;
+      --text-light: #1e293b;
+      --text-muted-light: #475569;
+      --border-light: #e2e8f0;
+      
+      --bg-dark: #0f172a;
+      --card-dark: #1e293b;
+      --text-dark: #f1f5f9;
+      --text-muted-dark: #94a3b8;
+      --border-dark: #334155;
+      
+      --primary: #d97706;
+      --primary-dark: #b45309;
+      --primary-light: #f59e0b;
+      --pending: #dc2626;
+      --progress: #ea580c;
+      --solved: #059669;
+    }
+    
+    body {
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    
+    body.light-mode {
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      color: var(--text-light);
+    }
+    
+    body.dark-mode {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: var(--text-dark);
+    }
+    
+    /* Card styling */
+    .dashboard-card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .dashboard-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Status badges */
+    .status-badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .status-pending { background: rgba(220,38,38,0.15); color: #dc2626; border: 1px solid rgba(220,38,38,0.3); }
+    .status-progress { background: rgba(234,88,12,0.15); color: #ea580c; border: 1px solid rgba(234,88,12,0.3); }
+    .status-solved { background: rgba(5,150,105,0.15); color: #059669; border: 1px solid rgba(5,150,105,0.3); }
+    .dark-mode .status-pending { background: rgba(220,38,38,0.25); color: #f87171; }
+    .dark-mode .status-progress { background: rgba(234,88,12,0.25); color: #fdba74; }
+    .dark-mode .status-solved { background: rgba(5,150,105,0.25); color: #6ee7b7; }
+    
+    /* Table styling dark mode */
+    .dark-mode .table-row {
+      border-bottom-color: var(--border-dark);
+    }
+    .dark-mode td, .dark-mode th {
+      color: var(--text-dark);
+    }
+    
+    /* Modal dark mode */
+    .dark-mode .modal-content {
+      background: var(--card-dark);
+      color: var(--text-dark);
+    }
+    
+    /* Progress bar */
+    .progress-bar {
+      height: 6px;
+      border-radius: 3px;
+      background-color: #e2e8f0;
+      overflow: hidden;
+    }
+    .dark-mode .progress-bar {
+      background-color: #334155;
+    }
+    .progress-fill {
+      height: 100%;
+      transition: width 0.4s ease;
+    }
+    .fill-pending { background-color: #dc2626; }
+    .fill-progress { background-color: #ea580c; }
+    .fill-solved { background-color: #059669; }
+    
+    /* Floating button & menu */
+    .floating-btn {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      cursor: pointer;
+      z-index: 100;
+      transition: all 0.2s;
+    }
+    .floating-btn:hover { transform: scale(1.1); background: var(--primary-dark); }
+    .floating-menu {
+      position: fixed;
+      bottom: 5rem;
+      right: 2rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      padding: 0.75rem;
+      z-index: 99;
+      transform: scale(0);
+      transform-origin: bottom right;
+      transition: transform 0.2s ease;
+      min-width: 160px;
+    }
+    .dark-mode .floating-menu {
+      background: #1e293b;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .floating-menu.active { transform: scale(1); }
+    .floating-menu-item {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+      color: var(--text-light);
+    }
+    .dark-mode .floating-menu-item { color: var(--text-dark); }
+    .floating-menu-item:hover { background: #f1f5f9; }
+    .dark-mode .floating-menu-item:hover { background: #334155; }
+    
+    /* Loading spinner */
+    .loading-spinner {
+      border: 4px solid #e2e8f0;
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    /* Utility */
+    .media-preview {
+      width: 48px;
+      height: 48px;
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .media-preview:hover { transform: scale(1.05); }
+    .file-upload-area {
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .dark-mode .file-upload-area { border-color: #475569; }
+    .file-upload-area:hover { border-color: var(--primary); background: rgba(217,119,6,0.05); }
+    .photo-preview { max-width: 100%; max-height: 150px; border-radius: 8px; margin-top: 0.5rem; display: none; }
+  </style>
+</head>
+<body class="light-mode">
+  <!-- Header -->
+  <header class="bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-lg">
+    <div class="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="bg-white/20 p-2 rounded-full"><i class="fas fa-road text-xl"></i></div>
+        <div>
+          <h1 class="text-xl md:text-2xl font-bold">Roads & Transport Department</h1>
+          <p class="text-amber-100 text-sm">Infrastructure Complaints Dashboard</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 mt-2 sm:mt-0">
+        <span id="currentDateTime" class="text-sm bg-white/20 px-3 py-1 rounded-full hidden md:inline-block"></span>
+        <button id="darkModeToggle" class="bg-white/20 p-2 rounded-full hover:bg-white/30 transition">
+          <i class="fas fa-moon"></i>
+        </button>
+        <button id="refreshBtn" class="bg-white/20 px-3 py-2 rounded-lg hover:bg-white/30 transition">
+          <i class="fas fa-sync-alt mr-1"></i> Refresh
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 dashboard-card transition-all">
+        <div class="flex justify-between items-start">
+          <div><p class="text-gray-500 dark:text-gray-400 text-sm">Total Complaints</p><p id="totalCount" class="text-2xl font-bold text-gray-800 dark:text-white">0</p></div>
+          <div class="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-full"><i class="fas fa-road text-amber-600 dark:text-amber-400"></i></div>
+        </div>
+        <div class="progress-bar mt-2"><div id="totalProgressBar" class="progress-fill fill-solved" style="width:100%"></div></div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 dashboard-card">
+        <div class="flex justify-between"><div><p class="text-gray-500 dark:text-gray-400 text-sm">Pending</p><p id="pendingCount" class="text-2xl font-bold text-red-600 dark:text-red-400">0</p></div><div class="bg-red-100 dark:bg-red-900/30 p-2 rounded-full"><i class="fas fa-clock text-red-600"></i></div></div>
+        <div class="progress-bar mt-2"><div id="pendingProgressBar" class="progress-fill fill-pending" style="width:0%"></div></div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 dashboard-card">
+        <div class="flex justify-between"><div><p class="text-gray-500 dark:text-gray-400 text-sm">In Progress</p><p id="progressCount" class="text-2xl font-bold text-orange-600 dark:text-orange-400">0</p></div><div class="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full"><i class="fas fa-tools text-orange-600"></i></div></div>
+        <div class="progress-bar mt-2"><div id="inProgressBar" class="progress-fill fill-progress" style="width:0%"></div></div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 dashboard-card">
+        <div class="flex justify-between"><div><p class="text-gray-500 dark:text-gray-400 text-sm">Solved</p><p id="solvedCount" class="text-2xl font-bold text-green-600 dark:text-green-400">0</p></div><div class="bg-green-100 dark:bg-green-900/30 p-2 rounded-full"><i class="fas fa-check-circle text-green-600"></i></div></div>
+        <div class="progress-bar mt-2"><div id="solvedProgressBar" class="progress-fill fill-solved" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <!-- Filters + Chart -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+        <div class="flex flex-wrap gap-2 mb-4">
+          <button data-filter="all" class="filter-btn px-4 py-2 rounded-lg bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-medium">All</button>
+          <button data-filter="pending" class="filter-btn px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">Pending</button>
+          <button data-filter="in-progress" class="filter-btn px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">In Progress</button>
+          <button data-filter="solved" class="filter-btn px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">Solved</button>
+        </div>
+        <div class="relative">
+          <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+          <input type="text" id="searchInput" placeholder="Search by name, location, or details..." class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-amber-400">
+        </div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+        <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-2">Status Overview</h3>
+        <canvas id="statusChart" height="180"></canvas>
+      </div>
+    </div>
+
+    <!-- Complaints Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+      <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+        <h2 class="text-lg font-bold text-gray-800 dark:text-white"><i class="fas fa-list mr-2"></i>Road Complaints</h2>
+        <button id="exportBtn" class="px-3 py-2 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200"><i class="fas fa-download mr-1"></i>Export CSV</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-900">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">ID</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Citizen</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Issue Details</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Location</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Media</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Action</th>
+            </tr>
+          </thead>
+          <tbody id="complaintsTableBody" class="divide-y divide-gray-200 dark:divide-gray-700">
+            <tr><td colspan="8" class="text-center py-10"><div class="loading-spinner mx-auto"></div><p class="mt-2 text-gray-500 dark:text-gray-400">Loading complaints...</p></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Pagination -->
+      <div id="pagination" class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center hidden">
+        <div class="text-sm text-gray-600 dark:text-gray-400">Showing <span id="pageStart">0</span> - <span id="pageEnd">0</span> of <span id="totalRows">0</span></div>
+        <div class="flex gap-2"><button id="prevPage" class="px-3 py-1 border rounded disabled:opacity-50">Prev</button><button id="nextPage" class="px-3 py-1 border rounded">Next</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Action Button -->
+  <div class="floating-btn" id="floatingBtn"><i class="fas fa-road"></i></div>
+  <div class="floating-menu" id="floatingMenu">
+    <div class="floating-menu-item" data-quick="all"><i class="fas fa-list mr-2"></i>All Complaints</div>
+    <div class="floating-menu-item" data-quick="pending"><i class="fas fa-clock mr-2"></i>Pending</div>
+    <div class="floating-menu-item" data-quick="in-progress"><i class="fas fa-tools mr-2"></i>In Progress</div>
+    <div class="floating-menu-item" id="exportQuick"><i class="fas fa-download mr-2"></i>Export Data</div>
+  </div>
+
+  <!-- Status Update Modal -->
+  <div id="statusModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 hidden p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6 relative shadow-xl modal-content">
+      <button id="closeStatusModal" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 dark:text-gray-400"><i class="fas fa-times"></i></button>
+      <h3 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Update Complaint Status</h3>
+      <div class="space-y-4">
+        <div><label class="block text-sm font-medium mb-1">Status</label><select id="statusSelect" class="w-full border rounded-lg p-2 dark:bg-gray-700 dark:border-gray-600"><option value="pending">Pending</option><option value="in-progress">In Progress</option><option value="solved">Solved</option></select></div>
+        <div><label class="block text-sm font-medium mb-1">Resolver Name</label><input type="text" id="resolverName" class="w-full border rounded-lg p-2 dark:bg-gray-700" placeholder="e.g., John Doe"></div>
+        <div><label class="block text-sm font-medium mb-1">Resolution Notes</label><textarea id="resolutionNotes" rows="2" class="w-full border rounded-lg p-2 dark:bg-gray-700" placeholder="Describe the action taken..."></textarea></div>
+        <div id="photoProofSection" class="hidden"><label class="block text-sm font-medium mb-1">Resolution Photo</label><div id="fileUploadArea" class="file-upload-area"><i class="fas fa-cloud-upload-alt text-2xl text-amber-500"></i><p class="text-sm">Click or drag image</p><input type="file" id="photoProof" accept="image/*" class="hidden"></div><img id="photoPreview" class="photo-preview"></div>
+      </div>
+      <div class="flex justify-end gap-3 mt-6"><button id="cancelStatus" class="px-4 py-2 bg-gray-200 rounded-lg">Cancel</button><button id="confirmStatus" class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700">Update</button></div>
+    </div>
+  </div>
+
+  <!-- Media Modal -->
+  <div id="mediaModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden p-4"><div class="relative max-w-3xl w-full"><button id="closeMediaModal" class="absolute -top-10 right-0 text-white text-2xl">&times;</button><div id="mediaContent" class="bg-black rounded-lg p-2 text-center"></div></div></div>
+
+  <script>
+    // Wrap in IIFE to avoid global conflicts
+    (function() {
+      // Supabase Client - unique variable
+      const SUPABASE_URL = "https://vbxvxqxzdhloklxrcgvb.supabase.co";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZieHZ4cXh6ZGhsb2tseHJjZ3ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MTI4NDcsImV4cCI6MjA5MDI4ODg0N30.arjQZaDWHBt3E8IffvaRE07pWbCC6-RSvLHK2uLmHsU";
+      const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      
+      // Global state
+      let allComplaints = [];
+      let filteredComplaints = [];
+      let currentFilter = "all";
+      let currentPage = 1;
+      const itemsPerPage = 10;
+      let currentComplaintId = null;
+      let statusChart = null;
+      
+      // DOM Elements
+      const tbody = document.getElementById("complaintsTableBody");
+      const searchInput = document.getElementById("searchInput");
+      const filterBtns = document.querySelectorAll(".filter-btn");
+      const exportBtn = document.getElementById("exportBtn");
+      const refreshBtn = document.getElementById("refreshBtn");
+      const darkModeToggle = document.getElementById("darkModeToggle");
+      const floatingBtn = document.getElementById("floatingBtn");
+      const floatingMenu = document.getElementById("floatingMenu");
+      
+      // Helper: format status display
+      function formatStatus(status) {
+        if (!status) return "Pending";
+        const s = status.toLowerCase();
+        if (s === "pending") return "Pending";
+        if (s === "in-progress" || s === "in progress") return "In Progress";
+        if (s === "solved") return "Solved";
+        return status;
+      }
+      
+      // Map display status to DB value for filtering
+      function mapFilterToDb(filter) {
+        if (filter === "pending") return "pending";
+        if (filter === "in-progress") return "in-progress";
+        if (filter === "solved") return "solved";
+        return null;
+      }
+      
+      // Theme handling
+      function initTheme() {
+        const saved = localStorage.getItem("roads_theme");
+        if (saved === "dark") {
+          document.body.classList.remove("light-mode");
+          document.body.classList.add("dark-mode");
+          darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        } else {
+          document.body.classList.remove("dark-mode");
+          document.body.classList.add("light-mode");
+          darkModeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+        }
+      }
+      function toggleTheme() {
+        if (document.body.classList.contains("dark-mode")) {
+          document.body.classList.remove("dark-mode");
+          document.body.classList.add("light-mode");
+          localStorage.setItem("roads_theme", "light");
+          darkModeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+        } else {
+          document.body.classList.remove("light-mode");
+          document.body.classList.add("dark-mode");
+          localStorage.setItem("roads_theme", "dark");
+          darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        }
+        if (statusChart) updateChart();
+      }
+      darkModeToggle.addEventListener("click", toggleTheme);
+      initTheme();
+      
+      // Fetch only Roads & Infrastructure complaints
+      async function fetchRoadsComplaints() {
+        try {
+          tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10"><div class="loading-spinner mx-auto"></div><p class="mt-2">Fetching road complaints...</p></td></tr>`;
+          const { data, error } = await supabaseClient
+            .from("complaints")
+            .select("*")
+            .eq("department", "Roads & Infrastructure")
+            .order("created_at", { ascending: false });
+          if (error) throw error;
+          allComplaints = data || [];
+          applyFiltersAndRender();
+          updateStatsAndChart();
+        } catch (err) {
+          console.error(err);
+          tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-red-500"><i class="fas fa-exclamation-triangle"></i> Error: ${err.message}</td></tr>`;
+        }
+      }
+      
+      function updateStatsAndChart() {
+        const total = allComplaints.length;
+        const pending = allComplaints.filter(c => (c.status || "").toLowerCase() === "pending").length;
+        const inProgress = allComplaints.filter(c => (c.status || "").toLowerCase() === "in-progress").length;
+        const solved = allComplaints.filter(c => (c.status || "").toLowerCase() === "solved").length;
+        
+        document.getElementById("totalCount").innerText = total;
+        document.getElementById("pendingCount").innerText = pending;
+        document.getElementById("progressCount").innerText = inProgress;
+        document.getElementById("solvedCount").innerText = solved;
+        
+        const totalPercent = total ? 100 : 0;
+        document.getElementById("totalProgressBar").style.width = `${totalPercent}%`;
+        document.getElementById("pendingProgressBar").style.width = total ? `${(pending/total)*100}%` : "0%";
+        document.getElementById("inProgressBar").style.width = total ? `${(inProgress/total)*100}%` : "0%";
+        document.getElementById("solvedProgressBar").style.width = total ? `${(solved/total)*100}%` : "0%";
+        
+        updateChart();
+      }
+      
+      function updateChart() {
+        const ctx = document.getElementById("statusChart").getContext("2d");
+        const pending = allComplaints.filter(c => (c.status || "").toLowerCase() === "pending").length;
+        const progress = allComplaints.filter(c => (c.status || "").toLowerCase() === "in-progress").length;
+        const solved = allComplaints.filter(c => (c.status || "").toLowerCase() === "solved").length;
+        if (statusChart) statusChart.destroy();
+        const isDark = document.body.classList.contains("dark-mode");
+        statusChart = new Chart(ctx, {
+          type: "doughnut",
+          data: { labels: ["Pending", "In Progress", "Solved"], datasets: [{ data: [pending, progress, solved], backgroundColor: ["#dc2626", "#ea580c", "#059669"], borderWidth: 0 }] },
+          options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: "bottom", labels: { color: isDark ? "#cbd5e1" : "#334155" } } } }
+        });
+      }
+      
+      function applyFiltersAndRender() {
+        let filtered = [...allComplaints];
+        if (currentFilter !== "all") {
+          const dbFilter = mapFilterToDb(currentFilter);
+          if (dbFilter) filtered = filtered.filter(c => (c.status || "").toLowerCase() === dbFilter);
+        }
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        if (searchTerm) {
+          filtered = filtered.filter(c => (c.name?.toLowerCase().includes(searchTerm)) || (c.details?.toLowerCase().includes(searchTerm)) || (c.location?.toLowerCase().includes(searchTerm)));
+        }
+        filteredComplaints = filtered;
+        currentPage = 1;
+        renderTable();
+      }
+      
+      function renderTable() {
+        const total = filteredComplaints.length;
+        const totalPages = Math.ceil(total / itemsPerPage);
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = Math.min(start + itemsPerPage, total);
+        const pageData = filteredComplaints.slice(start, end);
+        
+        if (total === 0) {
+          tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-gray-500 dark:text-gray-400"><i class="fas fa-road"></i> No road complaints found</td></tr>`;
+          document.getElementById("pagination").classList.add("hidden");
+          return;
+        }
+        document.getElementById("pagination").classList.remove("hidden");
+        document.getElementById("pageStart").innerText = start + 1;
+        document.getElementById("pageEnd").innerText = end;
+        document.getElementById("totalRows").innerText = total;
+        document.getElementById("prevPage").disabled = currentPage === 1;
+        document.getElementById("nextPage").disabled = currentPage === totalPages;
+        
+        tbody.innerHTML = pageData.map(complaint => {
+          const date = complaint.created_at ? new Date(complaint.created_at).toLocaleDateString() : "N/A";
+          const rawStatus = (complaint.status || "pending").toLowerCase();
+          let statusClass = "status-pending";
+          let statusIcon = "fa-clock";
+          let displayStatus = "Pending";
+          if (rawStatus === "in-progress") { statusClass = "status-progress"; statusIcon = "fa-tools"; displayStatus = "In Progress"; }
+          else if (rawStatus === "solved") { statusClass = "status-solved"; statusIcon = "fa-check"; displayStatus = "Solved"; }
+          
+          const mediaHtml = [];
+          if (complaint.photo) mediaHtml.push(`<img src="${complaint.photo}" class="media-preview inline mr-1" onclick="window.openMedia('${complaint.photo}','image')" title="Complaint Photo">`);
+          if (complaint.video) mediaHtml.push(`<i class="fas fa-video text-blue-500 cursor-pointer text-xl" onclick="window.openMedia('${complaint.video}','video')"></i>`);
+          if (complaint.resolved_proof) mediaHtml.push(`<img src="${complaint.resolved_proof}" class="media-preview inline" onclick="window.openMedia('${complaint.resolved_proof}','image')" title="Resolution Proof">`);
+          if (!mediaHtml.length) mediaHtml.push(`<span class="text-gray-400 text-sm">—</span>`);
+          
+          return `<tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <td class="px-4 py-3 text-sm font-mono">${complaint.id?.slice(0,8)}</td>
+            <td class="px-4 py-3 text-sm">${escapeHtml(complaint.name || "Anonymous")}</td>
+            <td class="px-4 py-3 text-sm max-w-xs truncate">${escapeHtml(complaint.details || "No details")}</td>
+            <td class="px-4 py-3 text-sm">${escapeHtml(complaint.location || "—")}</td>
+            <td class="px-4 py-3 text-sm">${date}</td>
+            <td class="px-4 py-3"><span class="status-badge ${statusClass}"><i class="fas ${statusIcon} mr-1"></i>${displayStatus}</span></td>
+            <td class="px-4 py-3">${mediaHtml.join(' ')}</td>
+            <td class="px-4 py-3"><button onclick="window.openStatusModal('${complaint.id}')" class="bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 px-3 py-1 rounded-lg text-sm hover:bg-amber-200"><i class="fas fa-edit"></i> Update</button></td>
+          </tr>`;
+        }).join("");
+      }
+      
+      function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+      
+      async function updateComplaintStatus(id, newStatus, resolver, notes, photoUrl) {
+        try {
+          const updatePayload = { status: newStatus, updated_at: new Date().toISOString() };
+          if (resolver) updatePayload.resolved_by = resolver;
+          if (notes) updatePayload.resolved_description = notes;
+          if (photoUrl) updatePayload.resolved_proof = photoUrl;
+          const { error } = await supabaseClient.from("complaints").update(updatePayload).eq("id", id);
+          if (error) throw error;
+          showToast("Status updated successfully", "success");
+          fetchRoadsComplaints();
+        } catch (err) { showToast("Update failed: " + err.message, "error"); }
+      }
+      
+      async function uploadPhoto(file, complaintId) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `roads_resolution_${complaintId}_${Date.now()}.${fileExt}`;
+        const { data, error } = await supabaseClient.storage.from("complaint-media").upload(fileName, file);
+        if (error) { console.error(error); return null; }
+        const { data: { publicUrl } } = supabaseClient.storage.from("complaint-media").getPublicUrl(fileName);
+        return publicUrl;
+      }
+      
+      // Modal handlers exposed globally
+      window.openStatusModal = (id) => {
+        currentComplaintId = id;
+        const complaint = allComplaints.find(c => c.id === id);
+        if (complaint) {
+          let dbStatus = (complaint.status || "pending").toLowerCase();
+          if (dbStatus === "in progress") dbStatus = "in-progress";
+          document.getElementById("statusSelect").value = dbStatus;
+          document.getElementById("resolverName").value = complaint.resolved_by || "";
+          document.getElementById("resolutionNotes").value = complaint.resolved_description || "";
+          const photoSection = document.getElementById("photoProofSection");
+          if (dbStatus === "in-progress" || dbStatus === "solved") photoSection.classList.remove("hidden");
+          else photoSection.classList.add("hidden");
+          document.getElementById("photoPreview").style.display = "none";
+          document.getElementById("photoProof").value = "";
+        }
+        document.getElementById("statusModal").classList.remove("hidden");
+      };
+      window.openMedia = (src, type) => {
+        const container = document.getElementById("mediaContent");
+        if (type === "image") container.innerHTML = `<img src="${src}" class="max-h-[80vh] mx-auto rounded">`;
+        else container.innerHTML = `<video controls class="max-h-[80vh] mx-auto"><source src="${src}" type="video/mp4"></video>`;
+        document.getElementById("mediaModal").classList.remove("hidden");
+      };
+      
+      // Modal close handlers
+      document.getElementById("closeStatusModal").onclick = () => document.getElementById("statusModal").classList.add("hidden");
+      document.getElementById("cancelStatus").onclick = () => document.getElementById("statusModal").classList.add("hidden");
+      document.getElementById("closeMediaModal").onclick = () => document.getElementById("mediaModal").classList.add("hidden");
+      document.getElementById("confirmStatus").onclick = async () => {
+        const newStatus = document.getElementById("statusSelect").value;
+        const resolver = document.getElementById("resolverName").value;
+        const notes = document.getElementById("resolutionNotes").value;
+        let photoUrl = null;
+        const fileInput = document.getElementById("photoProof");
+        if (fileInput.files.length) {
+          showToast("Uploading proof...", "info");
+          photoUrl = await uploadPhoto(fileInput.files[0], currentComplaintId);
+          if (!photoUrl) { showToast("Photo upload failed", "error"); return; }
+        }
+        await updateComplaintStatus(currentComplaintId, newStatus, resolver, notes, photoUrl);
+        document.getElementById("statusModal").classList.add("hidden");
+      };
+      
+      // File upload preview
+      const fileArea = document.getElementById("fileUploadArea");
+      const photoInput = document.getElementById("photoProof");
+      fileArea.addEventListener("click", () => photoInput.click());
+      photoInput.addEventListener("change", (e) => {
+        if (e.target.files.length) {
+          const reader = new FileReader();
+          reader.onload = (ev) => { document.getElementById("photoPreview").src = ev.target.result; document.getElementById("photoPreview").style.display = "block"; };
+          reader.readAsDataURL(e.target.files[0]);
+        }
+      });
+      document.getElementById("statusSelect").addEventListener("change", function() {
+        const section = document.getElementById("photoProofSection");
+        if (this.value === "in-progress" || this.value === "solved") section.classList.remove("hidden");
+        else section.classList.add("hidden");
+      });
+      
+      // Filter, search, pagination
+      filterBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+          filterBtns.forEach(b => b.classList.remove("bg-amber-100", "dark:bg-amber-900/40", "text-amber-800", "dark:text-amber-300"));
+          btn.classList.add("bg-amber-100", "dark:bg-amber-900/40", "text-amber-800", "dark:text-amber-300");
+          currentFilter = btn.getAttribute("data-filter");
+          currentPage = 1;
+          applyFiltersAndRender();
+        });
+      });
+      searchInput.addEventListener("input", () => { currentPage = 1; applyFiltersAndRender(); });
+      document.getElementById("prevPage").addEventListener("click", () => { if (currentPage > 1) { currentPage--; renderTable(); } });
+      document.getElementById("nextPage").addEventListener("click", () => { if (currentPage * itemsPerPage < filteredComplaints.length) { currentPage++; renderTable(); } });
+      exportBtn.addEventListener("click", () => {
+        if (!filteredComplaints.length) return showToast("No data to export", "warning");
+        let csvRows = [["ID","Name","Phone","Location","Details","Status","Date"]];
+        filteredComplaints.forEach(c => {
+          csvRows.push([c.id, c.name, c.phone, c.location, c.details, formatStatus(c.status), new Date(c.created_at).toLocaleDateString()]);
+        });
+        const blob = new Blob([csvRows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n")], {type:"text/csv"});
+        const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `roads_complaints_${new Date().toISOString().slice(0,10)}.csv`; link.click();
+      });
+      refreshBtn.addEventListener("click", fetchRoadsComplaints);
+      floatingBtn.addEventListener("click", () => floatingMenu.classList.toggle("active"));
+      document.getElementById("exportQuick").addEventListener("click", () => exportBtn.click());
+      document.querySelectorAll("[data-quick]").forEach(el => {
+        el.addEventListener("click", (e) => {
+          const filter = el.getAttribute("data-quick");
+          const targetBtn = document.querySelector(`.filter-btn[data-filter="${filter}"]`);
+          if (targetBtn) targetBtn.click();
+          floatingMenu.classList.remove("active");
+        });
+      });
+      
+      function showToast(msg, type) {
+        const toast = document.createElement("div");
+        toast.className = `fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg shadow-lg z-50 text-sm ${type === "error" ? "bg-red-500 text-white" : "bg-green-600 text-white"} animate-bounce`;
+        toast.innerText = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      }
+      
+      // Initial load
+      fetchRoadsComplaints();
+      setInterval(() => fetchRoadsComplaints(), 30000);
+    })();
+  </script>
+</body>
+</html>
