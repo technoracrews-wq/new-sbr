@@ -3457,7 +3457,7 @@ nav a::after {
     <a href="#stats">Live Status</a>
     <a href="#qr-scan-section">Scan QR</a>
     <a href="vote.html">Vote Complaint</a>
-    <a href="#departments">Raise Complaint</a>
+    <a href="form.html">Raise Complaint</a>
     <a href="#services">Our Services</a>
     <a href="#contact">Contact</a>
     
@@ -3468,14 +3468,16 @@ nav a::after {
     </button>
   </nav>
 
-  <div class="login-container" id="loginContainer">
-    <div class="user-name" id="userNameDisplay"></div>
+<div class="login-container" id="loginContainer">
+  <div class="user-profile-wrapper">
     <div class="login-icon" id="loginIcon">
       <div class="user-container">
         <div class="user-logo fas fa-user" id="userIcon" title="User Profile"></div>
       </div>
     </div>
+    <div class="user-name" id="userNameDisplay"></div>
   </div>
+</div>
 
   <div class="mobile-menu" id="mobileMenu">
     <i class="fas fa-bars"></i>
@@ -3492,16 +3494,27 @@ nav a::after {
     gap: 10px;
 }
 
+.user-profile-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
 .user-name {
-    color: #000000;
+    color: var(--text-dark);
     font-weight: 600;
-    font-size: 14px;
+    font-size: 11px;
     display: none;
+    text-align: center;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .user-name.active {
     display: block;
-    
 }
 
 /* Login Icon - Liquid Border */
@@ -4406,6 +4419,7 @@ function showLoginOptions() {
     const userNameDisplay = document.getElementById('userNameDisplay');
     const userIcon = document.getElementById('userIcon');
     userNameDisplay.classList.remove('active');
+    userNameDisplay.textContent = '';
     userIcon.style.color = '#555';
 }
 
